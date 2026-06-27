@@ -1,0 +1,10 @@
+##
+# Logstash Configuration
+# Kết nối với Elasticsearch chạy trong cùng Docker network
+##
+
+http.host: "0.0.0.0"
+http.port: 9600
+
+# Tắt monitoring qua Elasticsearch nội bộ (dùng API thay thế)
+xpack.monitoring.enabled: false

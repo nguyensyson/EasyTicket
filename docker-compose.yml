@@ -1,0 +1,328 @@
+##############################################################
+# EasyTicket – Local Infrastructure Stack
+# Bao gồm: Database (MySQL + Redis), Message Broker (Kafka),
+#           Identity (Keycloak), Observability (ELK Stack)
+#
+# Khởi chạy: docker compose up -d
+# Dừng:      docker compose down
+# Xóa data:  docker compose down -v
+##############################################################
+
+name: easyticket-infra
+
+# ─────────────────────────── NETWORKS ────────────────────────────
+networks:
+  easyticket-net:
+    driver: bridge
+
+# ─────────────────────────── VOLUMES ─────────────────────────────
+volumes:
+  mysql_data:
+  redis_data:
+  zookeeper_data:
+  kafka_data:
+  keycloak_data:
+  elasticsearch_data:
+
+# ─────────────────────────── SERVICES ────────────────────────────
+services:
+
+  # ================================================================
+  # 1. DATABASE – MySQL 8.0
+  #    Tạo sẵn 4 database: keycloak_db, event_db, order_db, user_db
+  #    Port: 3306 (host) → 3306 (container)
+  # ================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: easyticket-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: easyticket
+      MYSQL_PASSWORD: easyticket_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Script khởi tạo các database khi container chạy lần đầu
+      - ./infra/mysql/init:/docker-entrypoint-initdb.d:ro
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+      - "--default-authentication-plugin=mysql_native_password"
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ================================================================
+  # 2. CACHE – Redis 7
+  #    Dùng cho: Flash Sale inventory, session cache, event catalog
+  #    Port: 6379 (host) → 6379 (container)
+  #    Password: easyticket_redis
+  # ================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: easyticket-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass easyticket_redis
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "easyticket_redis", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================================================
+  # 3. MESSAGE BROKER – Zookeeper (required by Kafka)
+  #    Port: 2181 (host) → 2181 (container)
+  # ================================================================
+  zookeeper:
+    image: wurstmeister/zookeeper:3.4.6
+    container_name: easyticket-zookeeper
+    restart: unless-stopped
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/opt/zookeeper-3.4.6/data
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================================================
+  # 4. MESSAGE BROKER – Kafka
+  #    Topics sẽ được tạo tự động khi service publish lần đầu
+  #    Port: 9092 (host) → 9092 (container)
+  #
+  #    Topics dùng trong EasyTicket:
+  #      - ticket-reserved   (Ticket Service → Order Service)
+  #      - payment-success   (Payment Service → Order, Notification)
+  #      - payment-failed    (Payment Service → Order, Ticket)
+  # ================================================================
+  kafka:
+    image: wurstmeister/kafka:2.13-2.8.1
+    container_name: easyticket-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # PLAINTEXT_HOST là listener expose ra host machine (localhost:9092)
+      # PLAINTEXT là listener nội bộ Docker network (kafka:29092)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      # Tạo sẵn các topics cho EasyTicket
+      KAFKA_CREATE_TOPICS: >-
+        ticket-reserved:3:1,
+        payment-success:3:1,
+        payment-failed:3:1
+    volumes:
+      - kafka_data:/kafka
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ================================================================
+  # 5. KAFKA UI – Provectus Kafka UI
+  #    Giao diện web xem topics, messages, consumer groups
+  #    URL: http://localhost:8085
+  # ================================================================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: easyticket-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: easyticket-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      DYNAMIC_CONFIG_ENABLED: "true"
+    networks:
+      - easyticket-net
+
+  # ================================================================
+  # 6. IDENTITY PROVIDER – Keycloak 26.0.4
+  #    Kết nối vào keycloak_db trên MySQL
+  #    URL: http://localhost:8080
+  #    Admin credentials: admin / admin
+  #
+  #    Realm cần tạo thủ công sau khi khởi động:
+  #      - Realm name: SonNS_realm
+  #      - Client: quan_ly_ke_toan
+  # ================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.4
+    container_name: easyticket-keycloak
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # Admin account
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Database
+      KC_DB: mysql
+      KC_DB_URL: jdbc:mysql://mysql:3306/keycloak_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      KC_DB_USERNAME: root
+      KC_DB_PASSWORD: password
+      # Hostname
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      # Logging
+      KC_LOG_LEVEL: INFO
+    command: start-dev
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ================================================================
+  # 7. OBSERVABILITY – Elasticsearch 8.10.2
+  #    Lưu trữ logs từ Logstash
+  #    Port: 9200 (REST API), 9300 (transport)
+  #    Security tắt để dễ dùng ở local
+  # ================================================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: easyticket-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - "cluster.name=easyticket-logs"
+      - "network.host=0.0.0.0"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  # ================================================================
+  # 8. OBSERVABILITY – Logstash 8.10.0
+  #    Nhận logs từ các service → parse → đẩy vào Elasticsearch
+  #    Port: 5000 (TCP input), 5044 (Beats input), 9600 (API)
+  # ================================================================
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.0
+    container_name: easyticket-logstash
+    restart: unless-stopped
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "5044:5044"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+    volumes:
+      - ./infra/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./infra/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  # ================================================================
+  # 9. OBSERVABILITY – Kibana 8.10.2
+  #    Dashboard xem và search logs
+  #    URL: http://localhost:5601
+  # ================================================================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: easyticket-kibana
+    restart: unless-stopped
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+      KIBANA_SYSTEM_PASSWORD: ""
+      xpack.security.enabled: "false"
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s

@@ -1,0 +1,13 @@
+# Secrets – KHÔNG commit lên git
+.env
+.env.local
+.env.*.local
+
+# Docker override files
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+AuthService

@@ -58,7 +58,7 @@ com.easytickets.application/
 │   ├── SecurityConfig.java           # SecurityFilterChain, OAuth2 Resource Server config
 │   ├── SecurityProperties.java       # @ConfigurationProperties(prefix = "url") – permit list
 │   ├── CustomJwtAuthenticationConverter.java  # Extract roles từ Keycloak JWT claims
-│   └── {Other}Config.java            # Redis, Kafka producer config, OpenTelemetry config,...
+│   └── {Other}Config.java            # Redis, Kafka producer config, ObservationRestTemplateCustomizer,...
 ├── controller/
 │   └── {Feature}Controller.java      # @RestController, @RequestMapping("api/v1/...")
 ├── dto/                              # Request/Response DTO dùng riêng cho API layer
@@ -252,8 +252,9 @@ Khi tạo một Microservice mới (ví dụ: `EventService`), làm theo thứ t
 6. **infratructures module** – tạo Entity, JPA Repository, MapStruct Mapper, Adapter (RepositoryImpl), JpaConfig.
 7. **application module** – tạo Controller, SecurityConfig, `application.yaml`, Application.java.
 8. **worker module** – tạo Kafka consumers/producers nếu cần.
-9. **Cấu hình `application.yaml`** với đầy đủ: datasource, security oauth2, liquibase (tắt ở app, bật ở migration), logging, server port.
-10. **Kiểm tra** `@ComponentScan(basePackages = {"com.easytickets.*"})` và `@EnableJpaRepositories(basePackages = {"com.easytickets"})`.
+9. **Cấu hình `application.yaml`** với đầy đủ: datasource, security oauth2, liquibase (tắt ở app, bật ở migration), logging, server port, OTel tracing endpoint trỏ đến `otel-collector:4318`.
+10. **Tạo `logback-spring.xml`** với `LogstashTcpSocketAppender` để gửi structured JSON logs đến Logstash, kèm `traceId`/`spanId` trong MDC.
+11. **Kiểm tra** `@ComponentScan(basePackages = {"com.easytickets.*"})` và `@EnableJpaRepositories(basePackages = {"com.easytickets"})`.
 
 ---
 

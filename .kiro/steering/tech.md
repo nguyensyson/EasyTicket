@@ -80,53 +80,137 @@ log.info("Logout requested. clientId={}", keycloakConfig.getClientId());
 
 ---
 
-## 2. OpenTelemetry & Distributed Tracing
+## 2. OpenTelemetry Collector & Observability Stack
+
+Hệ thống EasyTicket sử dụng **OpenTelemetry Collector** làm trung tâm thu thập và định tuyến toàn bộ observability data:
+
+```
+Spring Boot Services
+      │
+      │  OTLP (gRPC/HTTP)
+      ▼
+[OTel Collector]
+      ├── Traces  ──► Elasticsearch (APM index)  ──► Kibana
+      ├── Logs    ──► Logstash ──► Elasticsearch  ──► Kibana
+      └── Metrics ──► Elasticsearch (metrics index) ──► Kibana
+```
 
 ### 2.1 Dependencies
 
-Thêm vào parent POM hoặc từng service cần tracing:
+Thêm vào parent POM `<dependencyManagement>`:
 
 ```xml
+<!-- Micrometer tracing bridge sang OpenTelemetry SDK -->
 <dependency>
     <groupId>io.micrometer</groupId>
     <artifactId>micrometer-tracing-bridge-otel</artifactId>
 </dependency>
+<!-- Export traces/metrics qua OTLP giao thức HTTP -->
 <dependency>
     <groupId>io.opentelemetry</groupId>
     <artifactId>opentelemetry-exporter-otlp</artifactId>
+</dependency>
+<!-- Export metrics sang Prometheus (scrape bởi OTel Collector) -->
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
+<!-- Logstash encoder – gửi log dạng JSON qua TCP đến Logstash -->
+<dependency>
+    <groupId>net.logstash.logback</groupId>
+    <artifactId>logstash-logback-encoder</artifactId>
+    <version>7.4</version>
 </dependency>
 ```
 
 ### 2.2 Cấu hình trong `application.yaml`
 
 ```yaml
+spring:
+  application:
+    name: {ServiceName}-application   # Tên này xuất hiện trong trace và log
+
 management:
   tracing:
     sampling:
-      probability: 1.0   # 100% sampling (giảm xuống 0.1 ở production)
+      probability: ${TRACING_SAMPLING:1.0}   # Giảm xuống 0.1 ở production
   otlp:
     tracing:
-      endpoint: http://jaeger:4318/v1/traces
-spring:
-  application:
-    name: AuthService-application   # Tên này xuất hiện trong trace
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4318/v1/traces}
+    metrics:
+      export:
+        url: ${OTEL_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
+  metrics:
+    export:
+      prometheus:
+        enabled: true          # OTel Collector scrape /actuator/prometheus
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
 ```
 
-### 2.3 TraceId / SpanId trong Log
+### 2.3 Cấu hình Logback – gửi log dạng JSON đến Logstash
+
+Tạo file `logback-spring.xml` trong `src/main/resources/`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Console appender – dùng cho local dev -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId},%X{spanId}] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Logstash appender – gửi JSON log qua TCP -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${LOGSTASH_HOST:-logstash}:${LOGSTASH_PORT:-5000}</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!-- Thêm traceId/spanId vào mỗi log entry để correlate với trace -->
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <customFields>{"service":"${spring.application.name:-unknown}"}</customFields>
+        </encoder>
+        <keepAliveDuration>5 minutes</keepAliveDuration>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="LOGSTASH"/>
+    </root>
+
+    <logger name="com.easytickets" level="DEBUG"/>
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+</configuration>
+```
+
+### 2.4 TraceId / SpanId trong Log
 
 Khi dùng `micrometer-tracing`, `traceId` và `spanId` được tự động inject vào MDC.
-Log pattern phải bao gồm `%X{traceId}` và `%X{spanId}`:
 
-```
-"%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId},%X{spanId}] %-5level %logger{36} - %msg%n"
-```
-
-Output mẫu:
+Output mẫu (console):
 ```
 2025-04-05 16:52:00.123 [http-nio-8091-exec-1] [4bf92f3577b34da6a3ce929d0e0e4736,00f067aa0ba902b7] INFO  s.h.b.s.i.UsersServiceImpl - User registered successfully. userId=abc123
 ```
 
-### 2.4 Trace Propagation giữa các Service
+Output mẫu (JSON gửi đến Logstash):
+```json
+{
+  "@timestamp": "2025-04-05T16:52:00.123Z",
+  "level": "INFO",
+  "logger_name": "sme.hub.business.services.impl.UsersServiceImpl",
+  "message": "User registered successfully. userId=abc123",
+  "service": "auth-service-application",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "spanId": "00f067aa0ba902b7"
+}
+```
+
+Nhờ `traceId` trong log, Kibana có thể **correlate log với trace** – click vào log entry để xem toàn bộ distributed trace tương ứng.
+
+### 2.5 Trace Propagation giữa các Service
 
 Khi một service gọi service khác qua REST (Feign Client hoặc RestTemplate), trace context phải được propagate tự động qua HTTP headers (`traceparent`, `tracestate` theo W3C standard).
 
@@ -143,6 +227,90 @@ public RestTemplate restTemplate(ObservationRegistry registry) {
     return restTemplate;
 }
 ```
+
+### 2.6 OTel Collector Configuration (`infra/otel-collector/otel-collector.yaml`)
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  # Scrape Prometheus metrics từ /actuator/prometheus của từng service
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "auth-service"
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["auth-service:8091"]
+          metrics_path: /actuator/prometheus
+        # Thêm job cho mỗi service mới
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1000
+  memory_limiter:
+    limit_mib: 256
+    check_interval: 5s
+  # Thêm resource attributes để phân biệt environment
+  resource:
+    attributes:
+      - action: insert
+        key: deployment.environment
+        value: ${ENVIRONMENT:-local}
+
+exporters:
+  # Traces → Elasticsearch APM
+  otlp/elasticsearch:
+    endpoint: http://apm-server:8200
+    tls:
+      insecure: true
+  # Logs → Logstash (forward từ OTel Collector)
+  otlp/logstash:
+    endpoint: http://logstash:4317
+    tls:
+      insecure: true
+  # Metrics → Elasticsearch qua OTel exporter
+  elasticsearch/metrics:
+    endpoints: ["http://elasticsearch:9200"]
+    index: "otel-metrics"
+  # Debug (local only)
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlp/elasticsearch, debug]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, resource]
+      exporters: [elasticsearch/metrics, debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlp/logstash, debug]
+```
+
+### 2.7 Kibana – Xem Observability Data
+
+| Tính năng | Kibana Menu | Index/Data Source |
+|---|---|---|
+| Logs search & filter | Discover | `easyticket-logs-*` |
+| Distributed Traces | APM → Traces | APM Server |
+| Service Map | APM → Service Map | APM Server |
+| Metrics Dashboard | Dashboard | `otel-metrics` |
+| Correlation Log ↔ Trace | Discover → click traceId | Tự động link |
+
+**Lưu ý**: Sau khi khởi động lần đầu, tạo Index Pattern trong Kibana:
+- `easyticket-logs-*` cho logs
+- `otel-metrics` cho metrics
 
 ---
 
@@ -462,7 +630,14 @@ management:
       probability: ${TRACING_SAMPLING:1.0}
   otlp:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://jaeger:4318/v1/traces}
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4318/v1/traces}
+    metrics:
+      export:
+        url: ${OTEL_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
+  metrics:
+    export:
+      prometheus:
+        enabled: true
   endpoints:
     web:
       exposure:
@@ -805,6 +980,7 @@ Các version được quản lý tập trung trong Parent POM `<dependencyManage
 | Hibernate Validator | `8.0.1.Final` |
 | Keycloak Admin Client | `26.0.4` |
 | Spring Security | `6.4.3` |
+| Logstash Logback Encoder | `7.4` |
 | MySQL Connector | Managed by Spring Boot BOM |
 
 Khi thêm dependency mới:

@@ -1,0 +1,142 @@
+##
+# OpenTelemetry Collector – EasyTicket
+#
+# Pipeline:
+#   Traces  → APM Server (OTLP HTTP :8200)  → Elasticsearch → Kibana APM
+#   Logs    → Logstash (TCP JSON :5000)      → Elasticsearch → Kibana Discover
+#   Metrics → Elasticsearch (:9200)          → Kibana Dashboard
+#
+# Spring Boot services gửi OTLP đến:
+#   gRPC: otel-collector:4317
+#   HTTP: otel-collector:4318
+##
+
+# ─────────────────────────── RECEIVERS ────────────────────────────
+receivers:
+  # Nhận Traces + Logs + Metrics từ Spring Boot qua OTLP
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://*"
+            - "https://*"
+
+  # Scrape Prometheus metrics từ /actuator/prometheus của từng service
+  # Thêm job mới khi triển khai service mới
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "auth-service"
+          scrape_interval: 15s
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ["auth-service:8091"]
+          # Thêm label để phân biệt service trong dashboard
+          relabel_configs:
+            - source_labels: [__address__]
+              target_label: instance
+
+        # Scrape OTel Collector self-metrics
+        - job_name: "otel-collector"
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["localhost:8888"]
+
+# ─────────────────────────── PROCESSORS ──────────────────────────
+processors:
+  # Giới hạn memory để tránh OOM
+  memory_limiter:
+    limit_mib: 256
+    check_interval: 5s
+
+  # Batch để tối ưu throughput khi export
+  batch:
+    timeout: 5s
+    send_batch_size: 1000
+    send_batch_max_size: 2000
+
+  # Thêm resource attributes cho mọi signal
+  resource:
+    attributes:
+      - action: insert
+        key: deployment.environment
+        value: ${env:ENVIRONMENT:-local}
+
+# ─────────────────────────── EXPORTERS ───────────────────────────
+exporters:
+  # Traces → Elastic APM Server
+  otlp/apm:
+    endpoint: http://apm-server:8200
+    tls:
+      insecure: true
+    headers:
+      # APM Server anonymous auth – không cần secret ở local
+      Authorization: "Bearer "
+
+  # Logs → Logstash qua TCP (Logstash nhận JSON lines trên port 5000)
+  # OTel Collector chuyển log records thành JSON gửi tới Logstash
+  otlphttp/logstash:
+    endpoint: http://logstash:5000
+    tls:
+      insecure: true
+
+  # Metrics → Elasticsearch trực tiếp
+  elasticsearch/metrics:
+    endpoints:
+      - http://elasticsearch:9200
+    index: "otel-metrics"
+    tls:
+      insecure: true
+    retry:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  # Debug exporter – bỏ comment khi cần troubleshoot pipeline
+  # debug:
+  #   verbosity: detailed
+
+# ─────────────────────────── EXTENSIONS ──────────────────────────
+extensions:
+  # Health check endpoint cho Docker healthcheck
+  health_check:
+    endpoint: 0.0.0.0:13133
+  # Expose OTel Collector self-metrics ở port 8888
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+# ─────────────────────────── SERVICE ─────────────────────────────
+service:
+  extensions: [health_check, zpages]
+
+  pipelines:
+    # Traces: Spring Boot → OTel Collector → APM Server → Elasticsearch
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlp/apm]
+
+    # Metrics: Spring Boot (OTLP) + Prometheus scrape → Elasticsearch
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, resource]
+      exporters: [elasticsearch/metrics]
+
+    # Logs: Spring Boot (Logback TCP) → Logstash
+    # Spring Boot gửi trực tiếp đến Logstash qua LogstashTcpSocketAppender
+    # OTel Collector chỉ forward nếu service dùng OTLP log exporter
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlphttp/logstash]
+
+  telemetry:
+    logs:
+      level: warn
+    metrics:
+      address: 0.0.0.0:8888

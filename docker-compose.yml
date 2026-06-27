@@ -1,7 +1,13 @@
 ##############################################################
 # EasyTicket – Local Infrastructure Stack
 # Bao gồm: Database (MySQL + Redis), Message Broker (Kafka),
-#           Identity (Keycloak), Observability (ELK Stack)
+#           Identity (Keycloak),
+#           Observability (OTel Collector + ELK Stack + APM)
+#
+# Observability Pipeline:
+#   Spring Boot → OTel Collector (OTLP) → Traces → APM Server → Elasticsearch → Kibana
+#                                        → Logs   → Logstash  → Elasticsearch → Kibana
+#                                        → Metrics → Elasticsearch → Kibana
 #
 # Khởi chạy: docker compose up -d
 # Dừng:      docker compose down
@@ -23,6 +29,7 @@ volumes:
   kafka_data:
   keycloak_data:
   elasticsearch_data:
+  apm_data:
 
 # ─────────────────────────── SERVICES ────────────────────────────
 services:
@@ -270,8 +277,8 @@ services:
 
   # ================================================================
   # 8. OBSERVABILITY – Logstash 8.10.0
-  #    Nhận logs từ các service → parse → đẩy vào Elasticsearch
-  #    Port: 5000 (TCP input), 5044 (Beats input), 9600 (API)
+  #    Nhận logs từ các service (TCP JSON) → parse → đẩy vào Elasticsearch
+  #    Port: 5000 (TCP input từ Logback), 4317 (OTLP gRPC từ OTel Collector), 9600 (API)
   # ================================================================
   logstash:
     image: docker.elastic.co/logstash/logstash:8.10.0
@@ -283,7 +290,7 @@ services:
     ports:
       - "5000:5000/tcp"
       - "5000:5000/udp"
-      - "5044:5044"
+      - "4317:4317"
       - "9600:9600"
     environment:
       LS_JAVA_OPTS: "-Xms256m -Xmx256m"
@@ -302,8 +309,12 @@ services:
 
   # ================================================================
   # 9. OBSERVABILITY – Kibana 8.10.2
-  #    Dashboard xem và search logs
+  #    Dashboard xem logs, traces (APM), metrics
   #    URL: http://localhost:5601
+  #    Tính năng:
+  #      - Discover: search logs (index: easyticket-logs-*)
+  #      - APM:      Traces, Service Map, Transactions
+  #      - Dashboard: Metrics từ otel-metrics index
   # ================================================================
   kibana:
     image: docker.elastic.co/kibana/kibana:8.10.2
@@ -326,3 +337,79 @@ services:
       timeout: 10s
       retries: 10
       start_period: 60s
+
+  # ================================================================
+  # 10. OBSERVABILITY – Elastic APM Server 8.10.2
+  #     Nhận traces từ OTel Collector (OTLP) → lưu vào Elasticsearch
+  #     Cung cấp Service Map, Transaction breakdown trong Kibana APM
+  #     Port: 8200 (APM intake / OTLP endpoint)
+  # ================================================================
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.10.2
+    container_name: easyticket-apm-server
+    restart: unless-stopped
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
+    ports:
+      - "8200:8200"
+    command: >
+      apm-server -e
+        -E apm-server.host=0.0.0.0:8200
+        -E apm-server.kibana.enabled=true
+        -E apm-server.kibana.host=http://kibana:5601
+        -E output.elasticsearch.hosts=["http://elasticsearch:9200"]
+        -E apm-server.auth.anonymous.enabled=true
+    volumes:
+      - apm_data:/usr/share/apm-server/data
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8200/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ================================================================
+  # 11. OBSERVABILITY – OpenTelemetry Collector
+  #     Trung tâm thu thập toàn bộ observability data từ Spring Boot services
+  #     Định tuyến:
+  #       Traces  → APM Server (OTLP HTTP :8200)
+  #       Logs    → Logstash (TCP :5000)
+  #       Metrics → Elasticsearch (HTTP :9200)
+  #     Ports:
+  #       4317 – OTLP gRPC (nhận từ service)
+  #       4318 – OTLP HTTP (nhận từ service)
+  #       8888 – OTel Collector metrics (self-monitoring)
+  #       8889 – Prometheus scrape endpoint
+  # ================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.103.0
+    container_name: easyticket-otel-collector
+    restart: unless-stopped
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      logstash:
+        condition: service_healthy
+      apm-server:
+        condition: service_healthy
+    ports:
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+      - "8888:8888"     # OTel Collector self-metrics
+      - "8889:8889"     # Prometheus scrape endpoint
+    volumes:
+      - ./infra/otel-collector/otel-collector.yaml:/etc/otel-collector-config.yaml:ro
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:13133/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

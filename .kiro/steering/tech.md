@@ -538,15 +538,15 @@ spring:
 | Author | `{tên}.{họ}` lowercase | `son.nguyen` |
 | Table name | `snake_case`, danh từ số nhiều | `users`, `ticket_orders`, `payment_transactions` |
 | Column name | `snake_case` | `created_at`, `keycloak_id`, `deleted_at` |
-| Audit columns bắt buộc | `id`, `created_at`, `updated_at`, `deleted` | |
+| Audit columns bắt buộc | `id`, `delete_flag`, `created_by`, `created_at`, `updated_by`, `updated_at` | |
 
 ### 5.4 Nguyên tắc quản lý Schema
 
 - **KHÔNG sửa changeSet đã commit** – chỉ thêm changeSet mới.
 - **KHÔNG dùng `DROP TABLE` trong migration thực tế** – chỉ dùng khi reset dev env.
-- Soft delete qua cột `deleted ENUM('ACTIVE', 'DELETED') DEFAULT 'ACTIVE'`.
+- Soft delete qua cột `delete_flag ENUM('ACTIVE', 'DELETED') NOT NULL DEFAULT 'ACTIVE'`.
 - Primary key dùng `CHAR(36)` với `DEFAULT (UUID())` – consistent với `@GeneratedValue(strategy = GenerationType.UUID)`.
-- Mỗi bảng cần đủ: `id`, `created_at`, `updated_at`, `deleted`.
+- Mỗi bảng cần đủ: `id`, `delete_flag`, `created_by`, `created_at`, `updated_by`, `updated_at`.
 - `onValidationFail="MARK_RAN"` – luôn thêm attribute này để tránh lỗi checksum khi hotfix.
 
 ### 5.5 BaseEntity (nên tạo trong `infratructures/model/`)
@@ -554,20 +554,61 @@ spring:
 ```java
 @MappedSuperclass
 @Data
+@EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @CreationTimestamp
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delete_flag", nullable = false)
+    private RecordStatus deleteFlag = RecordStatus.ACTIVE;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false)
+    private String createdBy;
+
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @LastModifiedBy
+    @Column(name = "updated_by")
+    private String updatedBy;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private DeleteStatus deleted = DeleteStatus.ACTIVE;
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+}
+```
+
+`RecordStatus` enum (đặt trong `infratructures/model/` hoặc `common/enums/`):
+```java
+public enum RecordStatus {
+    ACTIVE,
+    DELETED
+}
+```
+
+Kích hoạt JPA Auditing tại `JpaConfig.java`:
+```java
+@Configuration
+@EnableJpaAuditing(auditorAwareRef = "auditorProvider")
+@EnableJpaRepositories(basePackages = {"com.easytickets"})
+@EntityScan(basePackages = {"com.easytickets"})
+public class JpaConfig {
+
+    @Bean
+    public AuditorAware<String> auditorProvider() {
+        return () -> Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .filter(Authentication::isAuthenticated)
+                .map(auth -> {
+                    if (auth.getPrincipal() instanceof Jwt jwt) {
+                        return jwt.getSubject(); // Keycloak User ID (claim "sub")
+                    }
+                    return auth.getName();
+                });
+    }
 }
 ```
 
@@ -983,7 +1024,200 @@ Các version được quản lý tập trung trong Parent POM `<dependencyManage
 | Logstash Logback Encoder | `7.4` |
 | MySQL Connector | Managed by Spring Boot BOM |
 
-Khi thêm dependency mới:
-1. Thêm vào `<dependencyManagement>` trong Parent POM với version cụ thể.
-2. Dùng trong module con **không kèm version**.
-3. Ưu tiên dependencies đã có trong Spring Boot BOM trước khi thêm mới.
+## 13. Quy tắc Sinh Code
+
+**Không tạo test khi sinh code.**
+
+Khi tạo mới hoặc sửa bất kỳ class nào, chỉ tạo production code. Không sinh:
+- Test class (`*Test.java`, `*Tests.java`, `*Spec.java`)
+- File trong `src/test/` của bất kỳ module nào
+- Mock, stub, test configuration
+
+Test sẽ được viết riêng khi có yêu cầu cụ thể.
+
+---
+
+## 14. Audit Fields & Soft Delete
+
+Áp dụng **bắt buộc** cho tất cả Entity trong toàn hệ thống EasyTicket.
+
+### 14.1 Quy tắc cốt lõi
+
+- `deleteFlag` mặc định là `ACTIVE`. **Không bao giờ xóa vật lý dữ liệu** khỏi database.
+- Khi "xóa" một bản ghi, chỉ cập nhật `deleteFlag = DELETED`.
+- Tất cả query mặc định **chỉ lấy dữ liệu có `deleteFlag = ACTIVE`** – dùng `@Where` annotation hoặc filter tường minh trong repository.
+- `createdBy` và `updatedBy` chỉ lưu **Keycloak User ID** (giá trị JWT claim `sub`), không lưu username hay email.
+- `createdAt`, `updatedAt`, `createdBy`, `updatedBy` phải được **tự động gán bằng Spring Data JPA Auditing** (`@EnableJpaAuditing` + `AuditorAware`).
+- **Không được set thủ công** các trường audit trong Controller hoặc Service.
+
+### 14.2 Enum RecordStatus
+
+```java
+// Đặt trong common/enums/ hoặc infratructures/model/
+public enum RecordStatus {
+    ACTIVE,
+    DELETED
+}
+```
+
+### 14.3 BaseEntity chuẩn
+
+```java
+@MappedSuperclass
+@Data
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delete_flag", nullable = false)
+    private RecordStatus deleteFlag = RecordStatus.ACTIVE;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false)
+    private String createdBy;
+
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedBy
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+}
+```
+
+### 14.4 JpaConfig – Kích hoạt Auditing
+
+```java
+@Configuration
+@EnableJpaAuditing(auditorAwareRef = "auditorProvider")
+@EnableJpaRepositories(basePackages = {"com.easytickets"})
+@EntityScan(basePackages = {"com.easytickets"})
+public class JpaConfig {
+
+    /**
+     * Cung cấp Keycloak User ID (JWT claim "sub") làm giá trị cho createdBy / updatedBy.
+     * Trả về empty() khi không có authentication (ví dụ: migration, batch job).
+     */
+    @Bean
+    public AuditorAware<String> auditorProvider() {
+        return () -> Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .filter(Authentication::isAuthenticated)
+                .map(auth -> {
+                    if (auth.getPrincipal() instanceof Jwt jwt) {
+                        return jwt.getSubject();
+                    }
+                    return auth.getName();
+                });
+    }
+}
+```
+
+### 14.5 Soft Delete trong Repository
+
+Dùng `@Where` để tự động lọc bản ghi đã xóa ở mọi query:
+
+```java
+// Trên Entity
+@Entity
+@Where(clause = "delete_flag = 'ACTIVE'")
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class Order extends BaseEntity {
+    // ...
+}
+```
+
+Hoặc filter tường minh trong Port interface nếu không dùng `@Where`:
+
+```java
+// Trong business/repo/
+public interface OrderRepo {
+    Optional<OrderDto> findActiveById(String id);
+    List<OrderDto> findAllActive();
+}
+
+// Trong infratructures/shared/
+@Repository
+@RequiredArgsConstructor
+public class OrderRepositoryImpl implements OrderRepo {
+    private final OrderJpaRepository jpaRepository;
+    private final OrderMapper mapper;
+
+    @Override
+    public Optional<OrderDto> findActiveById(String id) {
+        return jpaRepository.findByIdAndDeleteFlag(id, RecordStatus.ACTIVE)
+                .map(mapper::toDto);
+    }
+}
+```
+
+Thao tác soft delete trong Service:
+
+```java
+// Đúng – soft delete
+public void deleteOrder(String id) {
+    OrderDto order = orderRepo.findActiveById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("ORDER_NOT_FOUND", "Order not found: " + id));
+    order.setDeleteFlag(RecordStatus.DELETED);
+    orderRepo.save(order);
+    log.info("Order soft-deleted. orderId={}", id);
+}
+
+// Sai – xóa vật lý
+public void deleteOrder(String id) {
+    orderRepo.deleteById(id); // KHÔNG làm thế này
+}
+```
+
+### 14.6 Database Convention – Audit Columns
+
+Mọi bảng mới trong migration SQL **phải có đủ** các cột sau:
+
+```sql
+id           CHAR(36)                          NOT NULL DEFAULT (UUID()),
+delete_flag  ENUM('ACTIVE', 'DELETED')         NOT NULL DEFAULT 'ACTIVE',
+created_by   VARCHAR(255)                      NULL,
+created_at   TIMESTAMP                         NULL,
+updated_by   VARCHAR(255)                      NULL,
+updated_at   TIMESTAMP                         NULL,
+PRIMARY KEY (id)
+```
+
+Ví dụ migration SQL hoàn chỉnh:
+
+```sql
+CREATE TABLE orders (
+    id           CHAR(36)                     NOT NULL DEFAULT (UUID()),
+    user_id      CHAR(36)                     NOT NULL,
+    event_id     CHAR(36)                     NOT NULL,
+    status       ENUM('PENDING_PAYMENT', 'PAID', 'CANCELLED') NOT NULL DEFAULT 'PENDING_PAYMENT',
+    total_amount DECIMAL(15, 2)               NOT NULL,
+    delete_flag  ENUM('ACTIVE', 'DELETED')    NOT NULL DEFAULT 'ACTIVE',
+    created_by   VARCHAR(255)                 NULL,
+    created_at   TIMESTAMP                    NULL,
+    updated_by   VARCHAR(255)                 NULL,
+    updated_at   TIMESTAMP                    NULL,
+    PRIMARY KEY (id)
+);
+```
+
+### 14.7 Quy tắc Sinh Code Tự động
+
+Khi sinh mới **Entity, Migration SQL, Repository, Service hoặc API**, phải **tự động áp dụng** toàn bộ chuẩn Audit Fields & Soft Delete này mà không cần người dùng nhắc lại:
+
+| Artifact | Áp dụng |
+|---|---|
+| Entity | Kế thừa `BaseEntity`, thêm `@EntityListeners(AuditingEntityListener.class)` nếu không extend |
+| Migration SQL | Thêm đủ 6 cột audit (`delete_flag`, `created_by`, `created_at`, `updated_by`, `updated_at`) + `id` |
+| Repository / Repo interface | Các method `find*` chỉ trả dữ liệu `deleteFlag = ACTIVE` |
+| Service delete method | Soft delete: set `deleteFlag = DELETED`, không gọi `deleteById` |
+| `JpaConfig` | `@EnableJpaAuditing(auditorAwareRef = "auditorProvider")` + `AuditorAware` bean |

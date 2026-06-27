@@ -266,3 +266,4 @@ Khi tạo một Microservice mới (ví dụ: `EventService`), làm theo thứ t
 - **Database per Service**: Mỗi service sở hữu schema riêng, không truy cập database của service khác.
 - **Migration Isolation**: Migration module chạy độc lập, không bị ảnh hưởng bởi application startup.
 - **Convention over Configuration**: Tuân thủ naming convention để giảm thiểu cấu hình tường minh.
+- **No Test Generation**: Khi sinh code, **không tạo test class, test method hay bất kỳ file nào trong thư mục `src/test/`**. Chỉ tạo production code thuần túy.

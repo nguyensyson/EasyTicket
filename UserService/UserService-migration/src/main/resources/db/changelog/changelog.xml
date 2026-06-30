@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet author="dev.team" id="V1_202506280000_create_user_profiles_table"
+               onValidationFail="MARK_RAN">
+        <sqlFile dbms="mysql"
+                 path="classpath:/db/sources/V1_202506280000_create_user_profiles_table.sql"
+                 relativeToChangelogFile="false"/>
+    </changeSet>
+
+</databaseChangeLog>

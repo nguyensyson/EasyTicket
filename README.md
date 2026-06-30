@@ -23,7 +23,7 @@ Với kiến trúc **Microservices** linh hoạt, EasyTicket cam kết mang lạ
           │              │              │              │
           ▼              ▼              ▼              ▼
    ┌─────────────┐ ┌──────────┐ ┌─────────────┐ ┌──────────┐
-   │ PostgreSQL  │ │  Redis   │ │ PostgreSQL  │ │   Kafka  │
+   │    MySQL    │ │  Redis   │ │    MySQL    │ │   Kafka  │
    │  + Redis    │ │  + Kafka │ │  + Kafka    │ │          │
    └─────────────┘ └──────────┘ └─────────────┘ └──────────┘
                                                        │
@@ -41,7 +41,7 @@ Với kiến trúc **Microservices** linh hoạt, EasyTicket cam kết mang lạ
 |---|---|
 | Backend | Java, Spring Boot |
 | API Gateway | NGINX Ingress Controller |
-| Database | PostgreSQL / MySQL |
+| Database | MySQL |
 | Cache & Inventory | Redis + Lua Script |
 | Message Broker | Apache Kafka |
 | Email | AWS SES |

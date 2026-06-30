@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.4</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.easytickets</groupId>
+    <artifactId>UserService</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>UserService</name>
+    <description>UserService – EasyTicket Platform</description>
+
+    <modules>
+        <module>UserService-application</module>
+        <module>UserService-business</module>
+        <module>UserService-common</module>
+        <module>UserService-infratructures</module>
+        <module>UserService-migration</module>
+        <module>UserService-worker</module>
+    </modules>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <liquibase.version>4.30.0</liquibase.version>
+        <keycloak.version>26.0.4</keycloak.version>
+        <lombok.version>1.18.30</lombok.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Internal modules -->
+            <dependency>
+                <groupId>com.easytickets</groupId>
+                <artifactId>UserService-application</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.easytickets</groupId>
+                <artifactId>UserService-business</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.easytickets</groupId>
+                <artifactId>UserService-common</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.easytickets</groupId>
+                <artifactId>UserService-infratructures</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.easytickets</groupId>
+                <artifactId>UserService-migration</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.easytickets</groupId>
+                <artifactId>UserService-worker</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
+
+            <!-- Keycloak Admin Client -->
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-admin-client</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+
+            <!-- MapStruct -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+
+            <!-- Logstash Logback Encoder -->
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>7.4</version>
+            </dependency>
+
+            <!-- jqwik – property-based testing -->
+            <dependency>
+                <groupId>net.jqwik</groupId>
+                <artifactId>jqwik</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+
+            <!-- Micrometer / OpenTelemetry – versions managed by Spring Boot BOM -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bridge-otel</artifactId>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-exporter-otlp</artifactId>
+            </dependency>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+            </dependency>
+
+            <!-- Spring Cloud OpenFeign -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-openfeign</artifactId>
+                <version>4.2.1</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>default-compile</id>
+                            <phase>compile</phase>
+                            <goals>
+                                <goal>compile</goal>
+                            </goals>
+                            <configuration>
+                                <annotationProcessorPaths>
+                                    <path>
+                                        <groupId>org.projectlombok</groupId>
+                                        <artifactId>lombok</artifactId>
+                                        <version>${lombok.version}</version>
+                                    </path>
+                                    <path>
+                                        <groupId>org.projectlombok</groupId>
+                                        <artifactId>lombok-mapstruct-binding</artifactId>
+                                        <version>0.2.0</version>
+                                    </path>
+                                    <path>
+                                        <groupId>org.mapstruct</groupId>
+                                        <artifactId>mapstruct-processor</artifactId>
+                                        <version>${mapstruct.version}</version>
+                                    </path>
+                                </annotationProcessorPaths>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>default-testCompile</id>
+                            <phase>test-compile</phase>
+                            <goals>
+                                <goal>testCompile</goal>
+                            </goals>
+                            <configuration>
+                                <annotationProcessorPaths>
+                                    <path>
+                                        <groupId>org.projectlombok</groupId>
+                                        <artifactId>lombok</artifactId>
+                                        <version>${lombok.version}</version>
+                                    </path>
+                                    <path>
+                                        <groupId>org.projectlombok</groupId>
+                                        <artifactId>lombok-mapstruct-binding</artifactId>
+                                        <version>0.2.0</version>
+                                    </path>
+                                    <path>
+                                        <groupId>org.mapstruct</groupId>
+                                        <artifactId>mapstruct-processor</artifactId>
+                                        <version>${mapstruct.version}</version>
+                                    </path>
+                                </annotationProcessorPaths>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>

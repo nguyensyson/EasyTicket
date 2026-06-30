@@ -4,11 +4,6 @@
 -- File này chạy tự động khi MySQL container khởi tạo lần đầu
 -- ============================================================
 
--- AuthService database (hiện đang dùng tên pro_be_auth theo application.yaml)
-CREATE DATABASE IF NOT EXISTS `pro_be_auth`
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
 -- Keycloak database
 CREATE DATABASE IF NOT EXISTS `keycloak_db`
     CHARACTER SET utf8mb4

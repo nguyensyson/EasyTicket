@@ -73,7 +73,6 @@ docker compose down -v
 
 | Database | Service sử dụng |
 |---|---|
-| `pro_be_auth` | AuthService (hiện tại) |
 | `keycloak_db` | Keycloak identity provider |
 | `event_db` | Event Service |
 | `order_db` | Order Service |

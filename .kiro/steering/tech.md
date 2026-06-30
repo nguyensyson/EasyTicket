@@ -537,7 +537,7 @@ spring:
 | ChangeSet ID | Trùng tên file (bỏ `.sql`) | `V2_202506281000_add_phone_to_users` |
 | Author | `{tên}.{họ}` lowercase | `son.nguyen` |
 | Table name | `snake_case`, danh từ số nhiều | `users`, `ticket_orders`, `payment_transactions` |
-| Column name | `snake_case` | `created_at`, `keycloak_id`, `deleted_at` |
+| Column name | `snake_case` | `created_at`, `keycloak_id`, `delete_flag` |
 | Audit columns bắt buộc | `id`, `delete_flag`, `created_by`, `created_at`, `updated_by`, `updated_at` | |
 
 ### 5.4 Nguyên tắc quản lý Schema

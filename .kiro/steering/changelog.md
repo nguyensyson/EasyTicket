@@ -32,6 +32,20 @@ inclusion: manual
 
 ## Lịch sử Thay đổi
 
+### [2026-06-28 12:00] – FEATURE – Tạo Spec (Requirements + Design) cho UserService
+
+**Service/Module:** `UserService`
+**Loại:** FEATURE
+**Mô tả:**
+Tạo toàn bộ tài liệu spec cho UserService – microservice mới trong hệ thống EasyTicket đóng vai trò trung gian với Keycloak và quản lý profile người dùng. Bao gồm tài liệu Requirements (15 yêu cầu EARS-format, phủ toàn bộ login/register/profile/aggregation/security/migration/observability) và tài liệu Design (kiến trúc Maven multi-module 6 module, class design, sequence diagram, DDL MySQL, cấu hình đầy đủ, 12 correctness properties). Database được xác nhận dùng MySQL.
+
+**Files thay đổi:**
+- `.kiro/specs/user-service/requirements.md` – Tạo mới (15 requirements, EARS format, MySQL confirmed)
+- `.kiro/specs/user-service/design.md` – Tạo mới (high-level design, class design, sequence diagrams, DDL, config, PBT properties)
+- `.kiro/specs/user-service/.config.kiro` – Tạo mới (specType: feature, workflowType: requirements-first)
+
+---
+
 ### [2026-06-28 00:00] – DOCS – Khởi tạo Changelog Steering File
 
 **Service/Module:** `.kiro/steering`

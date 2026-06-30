@@ -117,7 +117,7 @@ com.easytickets.infratructures/
 ├── model/
 │   ├── {Entity}.java                 # @Entity – JPA Entity
 │   ├── {StatusEnum}.java             # Enum dùng trong Entity (@Enumerated(EnumType.STRING))
-│   └── BaseEntity.java               # (nên tạo) Abstract base với id, createdAt, updatedAt, deleted
+│   └── BaseEntity.java               # (nên tạo) Abstract base với id, delete_flag, createdAt, updatedAt
 ├── repo/
 │   └── {Feature}Repository.java      # extends JpaRepository<Entity, ID> – Spring Data JPA
 └── shared/

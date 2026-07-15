@@ -62,7 +62,7 @@ Với kiến trúc **Microservices** linh hoạt, EasyTicket cam kết mang lạ
 ## Đối tượng Người dùng
 
 ### 1. Nhà tổ chức sự kiện (Organizer)
-- Đăng ký, xác thực hồ sơ nhà tổ chức
+- Đăng ký, Đăng nhâp
 - Tạo và quản lý sự kiện, số lượng vé, mức giá
 - Lên lịch thời gian mở bán (Flash Sale timer)
 - Dashboard phân tích: doanh thu, lượng vé bán ra
@@ -74,7 +74,7 @@ Với kiến trúc **Microservices** linh hoạt, EasyTicket cam kết mang lạ
 - Theo dõi lịch sử giao dịch và trạng thái vé
 
 ### 3. Quản trị viên (System Admin)
-- Duyệt/khóa tài khoản nhà tổ chức
+- Quan ly tài khoản nhà tổ chức
 - Giám sát hệ thống: traffic, CPU/RAM, nghẽn cổ chai
 - Theo dõi số lượng event đang publish
 

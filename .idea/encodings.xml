@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/EventService/EventService-application/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/EventService/EventService-business/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/EventService/EventService-common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/EventService/EventService-infratructures/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/EventService/EventService-migration/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/EventService/EventService-worker/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/EventService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/EventService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/NotificationService/NotificationService-application/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/NotificationService/NotificationService-business/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/NotificationService/NotificationService-common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/NotificationService/NotificationService-infratructures/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/NotificationService/NotificationService-migration/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/NotificationService/NotificationService-worker/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/NotificationService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/NotificationService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/OrderService/OrderService-application/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/OrderService/OrderService-business/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/OrderService/OrderService-common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/OrderService/OrderService-infratructures/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/OrderService/OrderService-migration/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/OrderService/OrderService-worker/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/OrderService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/OrderService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/PaymentService/PaymentService-application/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/PaymentService/PaymentService-business/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/PaymentService/PaymentService-common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/PaymentService/PaymentService-infratructures/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/PaymentService/PaymentService-migration/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/PaymentService/PaymentService-worker/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/PaymentService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/PaymentService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/TicketService/TicketService-application/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/TicketService/TicketService-business/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/TicketService/TicketService-common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/TicketService/TicketService-infratructures/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/TicketService/TicketService-migration/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/TicketService/TicketService-worker/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/TicketService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/TicketService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/UserService/UserService-business/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/UserService/UserService-common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/UserService/UserService-infratructures/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/UserService/UserService-migration/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/UserService/UserService-worker/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/UserService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/UserService/src/main/resources" charset="UTF-8" />
+  </component>
+</project>

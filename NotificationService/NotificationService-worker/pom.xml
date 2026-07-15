@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.easytickets</groupId>
+        <artifactId>NotificationService</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>NotificationService-worker</artifactId>
+    <name>NotificationService-worker</name>
+    <description>Kafka consumers, scheduled jobs, and async workers</description>
+
+    <dependencies>
+        <!-- Spring Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Kafka – consumes payment-success to render QR ticket and send email -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Internal: business -->
+        <dependency>
+            <groupId>com.easytickets</groupId>
+            <artifactId>NotificationService-business</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Internal: infratructures -->
+        <dependency>
+            <groupId>com.easytickets</groupId>
+            <artifactId>NotificationService-infratructures</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Internal: common -->
+        <dependency>
+            <groupId>com.easytickets</groupId>
+            <artifactId>NotificationService-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

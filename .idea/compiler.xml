@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="EventService-worker" />
+        <module name="UserService-infratructures" />
+        <module name="NotificationService-migration" />
+        <module name="EventService-application" />
+        <module name="UserService-worker" />
+        <module name="OrderService-migration" />
+        <module name="UserService-common" />
+        <module name="EventService-migration" />
+        <module name="UserService-migration" />
+        <module name="TicketService-business" />
+        <module name="NotificationService-infratructures" />
+        <module name="EventService-common" />
+        <module name="PaymentService-migration" />
+        <module name="PaymentService-application" />
+        <module name="UserService-business" />
+        <module name="TicketService-application" />
+        <module name="OrderService-application" />
+        <module name="NotificationService-worker" />
+        <module name="PaymentService-worker" />
+        <module name="OrderService-business" />
+        <module name="TicketService-infratructures" />
+        <module name="EventService-business" />
+        <module name="OrderService-infratructures" />
+        <module name="NotificationService-common" />
+        <module name="TicketService-worker" />
+        <module name="PaymentService-business" />
+        <module name="OrderService-worker" />
+        <module name="TicketService-common" />
+        <module name="PaymentService-infratructures" />
+        <module name="PaymentService-common" />
+        <module name="TicketService-migration" />
+        <module name="NotificationService-application" />
+        <module name="NotificationService-business" />
+        <module name="EventService-infratructures" />
+        <module name="OrderService-common" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="EventService" options="" />
+      <module name="EventService-application" options="-parameters" />
+      <module name="EventService-business" options="-parameters" />
+      <module name="EventService-common" options="-parameters" />
+      <module name="EventService-infratructures" options="-parameters" />
+      <module name="EventService-migration" options="-parameters" />
+      <module name="EventService-worker" options="-parameters" />
+      <module name="NotificationService" options="" />
+      <module name="NotificationService-application" options="-parameters" />
+      <module name="NotificationService-business" options="-parameters" />
+      <module name="NotificationService-common" options="-parameters" />
+      <module name="NotificationService-infratructures" options="-parameters" />
+      <module name="NotificationService-migration" options="-parameters" />
+      <module name="NotificationService-worker" options="-parameters" />
+      <module name="OrderService" options="" />
+      <module name="OrderService-application" options="-parameters" />
+      <module name="OrderService-business" options="-parameters" />
+      <module name="OrderService-common" options="-parameters" />
+      <module name="OrderService-infratructures" options="-parameters" />
+      <module name="OrderService-migration" options="-parameters" />
+      <module name="OrderService-worker" options="-parameters" />
+      <module name="PaymentService" options="" />
+      <module name="PaymentService-application" options="-parameters" />
+      <module name="PaymentService-business" options="-parameters" />
+      <module name="PaymentService-common" options="-parameters" />
+      <module name="PaymentService-infratructures" options="-parameters" />
+      <module name="PaymentService-migration" options="-parameters" />
+      <module name="PaymentService-worker" options="-parameters" />
+      <module name="TicketService" options="" />
+      <module name="TicketService-application" options="-parameters" />
+      <module name="TicketService-business" options="-parameters" />
+      <module name="TicketService-common" options="-parameters" />
+      <module name="TicketService-infratructures" options="-parameters" />
+      <module name="TicketService-migration" options="-parameters" />
+      <module name="TicketService-worker" options="-parameters" />
+      <module name="UserService-application" options="-parameters" />
+      <module name="UserService-business" options="-parameters" />
+      <module name="UserService-common" options="-parameters" />
+      <module name="UserService-infratructures" options="-parameters" />
+      <module name="UserService-migration" options="-parameters" />
+      <module name="UserService-worker" options="-parameters" />
+    </option>
+  </component>
+</project>

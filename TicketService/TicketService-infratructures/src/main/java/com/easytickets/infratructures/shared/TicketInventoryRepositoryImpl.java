@@ -3,6 +3,7 @@ package com.easytickets.infratructures.shared;
 import com.easytickets.business.dto.ReservationResult;
 import com.easytickets.business.dto.ReservationStatus;
 import com.easytickets.business.dto.TicketMetaDto;
+import com.easytickets.business.dto.TicketReservationDto;
 import com.easytickets.business.dto.TicketTypeDto;
 import com.easytickets.business.dto.event.TicketReservedEvent;
 import com.easytickets.business.repo.TicketInventoryRepo;
@@ -121,6 +122,21 @@ public class TicketInventoryRepositoryImpl implements TicketInventoryRepo {
         String key = reservationKey(event.getReservationId());
         redisTemplate.opsForHash().putAll(key, fields);
         redisTemplate.expire(key, Duration.ofSeconds(ttlSeconds));
+    }
+
+    @Override
+    public Optional<TicketReservationDto> getReservation(String reservationId) {
+        Map<Object, Object> entries = redisTemplate.opsForHash().entries(reservationKey(reservationId));
+        if (entries.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(TicketReservationDto.builder()
+                .userId((String) entries.get("userId"))
+                .eventId((String) entries.get("eventId"))
+                .ticketTypeId((String) entries.get("ticketTypeId"))
+                .quantity(Integer.parseInt((String) entries.get("quantity")))
+                .unitPrice(new BigDecimal((String) entries.get("unitPrice")))
+                .build());
     }
 
     @Override

@@ -185,8 +185,8 @@ Không có DB quan hệ — Redis là nguồn sự thật duy nhất cho tồn k
 |---|---|---|---|---|
 | GET | `/api/v1/notifications/me` | ✓ | `BUYER` | Lịch sử thông báo/email đã gửi cho người dùng hiện tại |
 
-**Infratructures (`NotificationService-infratructures`):** giao tiếp với các bên thứ 3 — Kafka Consumer `payment-success` (render vé QR, gửi email qua AWS SES, idempotent theo `orderId`); Kafka Consumer `payment-failed` (gửi email thông báo hủy đơn); client gọi AWS SES.
-**Worker (`NotificationService-worker`):** không có tác vụ định kỳ ở giai đoạn hiện tại.
+**Infratructures (`NotificationService-infratructures`):** giao tiếp với các bên thứ 3 — Kafka Consumer `payment-success` (idempotent theo `orderId` + `type`, publish message ticket-email sang **AWS SQS**, xem Luồng 7 ở trên); Kafka Consumer `payment-failed` (dự kiến, gửi thông báo hủy đơn sang SQS tương tự). Việc gọi AWS SES để thực sự gửi email được tách sang một consumer riêng của queue SQS, chưa nằm trong `NotificationService-infratructures` hiện tại.
+**Worker (`NotificationService-worker`):** không có tác vụ định kỳ ở giai đoạn hiện tại — module giữ chỗ, dự kiến dùng cho consumer đọc queue SQS + gọi AWS SES ở giai đoạn sau.
 
 ---
 
@@ -306,18 +306,18 @@ Theo nguyên tắc kiến trúc (`.claude/rules/product.md`), **Redis là nguồ
 
 **Bảng `notifications`**
 
+> **Lưu ý kiến trúc (app → SQS → SES):** NotificationService hiện tại **không** gọi AWS SES trực tiếp. Sau khi consume `payment-success`, service chỉ **publish message sang AWS SQS** (queue `ticket-email`); một consumer riêng của queue này (triển khai sau) sẽ đảm nhận việc render QR + gọi AWS SES để thực sự gửi email. Vì vậy bảng `notifications` bên dưới ghi nhận **kết quả publish sang SQS**, không phải kết quả gửi email — cột `user_id`/`recipient` (email người nhận) sẽ được bổ sung bằng migration mới khi phần consume-SQS-gửi-SES được triển khai.
+
 | Cột | Kiểu | Ràng buộc | Ghi chú |
 |---|---|---|---|
 | `order_id` | `CHAR(36)` | `NOT NULL` | Tham chiếu logic sang Order Service — khóa idempotency khi consume Kafka (kèm `type`) |
-| `user_id` | `VARCHAR(255)` | `NOT NULL` | Keycloak user UUID người nhận |
-| `channel` | `ENUM('EMAIL')` | `NOT NULL DEFAULT 'EMAIL'` | Dự phòng mở rộng SMS/Push sau này |
 | `type` | `ENUM('TICKET_QR','ORDER_CANCELLED')` | `NOT NULL` | |
-| `recipient` | `VARCHAR(255)` | `NOT NULL` | Email người nhận |
-| `status` | `ENUM('SENT','FAILED')` | `NOT NULL` | |
-| `error_message` | `VARCHAR(500)` | `NULL` | |
-| `sent_at` | `DATETIME` | `NULL` | |
+| `channel` | `ENUM('EMAIL')` | `NOT NULL DEFAULT 'EMAIL'` | Dự phòng mở rộng SMS/Push sau này |
+| `status` | `ENUM('QUEUED','QUEUE_FAILED')` | `NOT NULL` | Kết quả publish message sang SQS — **không** phản ánh việc email đã gửi hay chưa |
+| `error_message` | `VARCHAR(500)` | `NULL` | Lỗi khi publish sang SQS thất bại |
+| `queued_at` | `DATETIME` | `NULL` | Thời điểm publish thành công sang SQS |
 
-> Ràng buộc `UNIQUE (order_id, type)` đảm bảo không gửi trùng email cho cùng một order khi Kafka message được deliver lại (idempotency).
+> Ràng buộc `UNIQUE (order_id, type)` đảm bảo không publish trùng message cho cùng một order khi Kafka message được deliver lại (idempotency).
 
 ---
 
@@ -409,16 +409,21 @@ Theo nguyên tắc kiến trúc (`.claude/rules/product.md`), **Redis là nguồ
 3. Từ thời điểm này, vé lại xuất hiện trong kết quả `GET /api/v1/tickets/{eventId}/availability` và có thể được buyer khác mua thành công ở lượt `POST /api/v1/tickets/{eventId}/purchase` tiếp theo.
 4. `Order.status` giữ nguyên `CANCELLED` (đã cập nhật ở Luồng 5) làm bằng chứng lịch sử — không xoá vật lý.
 
-### Luồng 7 — Gửi vé điện tử qua email
+### Luồng 7 — Gửi vé điện tử qua email (app → SQS → SES)
 
-**Mô tả:** Sau khi thanh toán thành công, buyer nhận vé có mã QR qua email để check-in tại sự kiện.
+**Mô tả:** Sau khi thanh toán thành công, buyer nhận vé có mã QR qua email để check-in tại sự kiện. NotificationService **không gọi AWS SES trực tiếp** — nó chỉ chịu trách nhiệm publish message sang **AWS SQS**; việc render QR và gọi SES để thực sự gửi email được tách thành một consumer riêng của queue này, triển khai ở giai đoạn sau.
 
-**Các bước xử lý:**
-1. `NotificationService-infratructures` (Kafka Consumer) nhận `payment-success` (idempotent theo `orderId`).
-2. Truy vấn/nhận kèm thông tin order + loại vé (qua payload Kafka hoặc gọi thêm Order/Event Service nếu cần chi tiết hiển thị).
-3. Render vé điện tử kèm mã QR (mã hoá `orderId`/`ticketId` dùng để check-in).
-4. Gửi email qua **AWS SES** tới địa chỉ email của buyer (lấy từ Keycloak/UserProfile).
-5. Ghi log kết quả gửi (thành công/thất bại) vào `notification_db`, có thể tra cứu qua `GET /api/v1/notifications/me`.
+**Các bước xử lý (phạm vi hiện tại — app → SQS):**
+1. `NotificationService-infratructures` (Kafka Consumer `PaymentSuccessConsumer`) nhận `payment-success` (idempotent theo `orderId` + `type`, kiểm tra qua bảng `notifications` trước khi xử lý — xem `NotificationServiceImpl.processPaymentSuccess`).
+2. Build message `{ orderId, paymentId, paidAt, type: "TICKET_QR" }` từ payload Kafka nhận được (chưa gọi thêm Order/Event/User Service).
+3. Publish message vào **AWS SQS** (queue `ticket-email`) qua `NotificationQueuePublisher` (port ở `business`, adapter `TicketEmailQueueProducer` ở `infratructures` dùng AWS SDK `SqsClient`). Queue URL cấu hình qua biến môi trường `TICKET_EMAIL_QUEUE_URL` (property `notification.queue.ticket-email-url`).
+4. Ghi log kết quả publish (`QUEUED`/`QUEUE_FAILED`) vào `notification_db` (bảng `notifications`) để làm khóa idempotency cho lần retry/deliver-lại của Kafka.
+5. Nếu publish sang SQS thất bại, service throw `NotificationQueueFailedException` — Kafka sẽ retry theo cấu hình container mặc định của Spring Boot.
+
+**Các bước xử lý (giai đoạn sau — SQS → SES, chưa triển khai trong repo này):**
+6. Một consumer riêng (Lambda hoặc `NotificationService-worker`) đọc queue `ticket-email`, lấy thêm thông tin order/loại vé (Order/Event Service) và email người nhận (Keycloak/UserProfile qua User Service).
+7. Render vé điện tử kèm mã QR (mã hoá `orderId`/`ticketId` dùng để check-in), gửi email qua **AWS SES**.
+8. Ghi kết quả gửi email (thành công/thất bại) — cần migration bổ sung cột `user_id`/`recipient`/`sent_at` cho bảng `notifications`, có thể tra cứu qua `GET /api/v1/notifications/me`.
 
 ### Luồng 8 — Xem lịch sử vé & thống kê tổ chức sự kiện (Aggregation)
 

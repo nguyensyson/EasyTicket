@@ -29,6 +29,10 @@ server:
 keycloak:
   client-id: ${KEYCLOAK_CLIENT_ID:event-service-client}
 
+services:
+  order-service:
+    url: ${ORDER_SERVICE_URL:http://localhost:8083}
+
 management:
   tracing:
     sampling:

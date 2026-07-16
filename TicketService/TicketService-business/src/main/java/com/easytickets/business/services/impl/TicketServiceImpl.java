@@ -6,7 +6,9 @@ import com.easytickets.business.dto.PurchaseTicketResponse;
 import com.easytickets.business.dto.ReservationResult;
 import com.easytickets.business.dto.TicketAvailabilityDto;
 import com.easytickets.business.dto.TicketMetaDto;
+import com.easytickets.business.dto.TicketReservationDto;
 import com.easytickets.business.dto.TicketTypeDto;
+import com.easytickets.business.dto.event.PaymentFailedEvent;
 import com.easytickets.business.dto.event.TicketReservedEvent;
 import com.easytickets.business.exception.EventServiceUnavailableException;
 import com.easytickets.business.exception.InventoryUnavailableException;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -117,6 +120,24 @@ public class TicketServiceImpl implements TicketService {
         ticketInventoryRepo.loadInventory(eventId, ticketTypes);
         log.info("Inventory loaded. eventId={}, ticketTypeCount={}", eventId, ticketTypes.size());
         return ticketTypes.size();
+    }
+
+    @Override
+    public void releaseReservation(PaymentFailedEvent event) {
+        String reservationId = event.getReservationId();
+        Optional<TicketReservationDto> reservation = ticketInventoryRepo.getReservation(reservationId);
+        if (reservation.isEmpty()) {
+            log.info("Reservation already released or expired, skip. reservationId={}, orderId={}",
+                    reservationId, event.getOrderId());
+            return;
+        }
+
+        TicketReservationDto data = reservation.get();
+        ticketInventoryRepo.release(data.getEventId(), data.getTicketTypeId(), data.getQuantity());
+        ticketInventoryRepo.deleteReservation(reservationId);
+
+        log.info("Ticket released back to inventory. reservationId={}, orderId={}, eventId={}, ticketTypeId={}, quantity={}, reason={}",
+                reservationId, event.getOrderId(), data.getEventId(), data.getTicketTypeId(), data.getQuantity(), event.getReason());
     }
 
     private ReservationResult safeReserve(String eventId, String ticketTypeId, int quantity) {

@@ -4,6 +4,7 @@ import com.easytickets.business.dto.CreateEventRequest;
 import com.easytickets.business.dto.EventCategory;
 import com.easytickets.business.dto.EventDto;
 import com.easytickets.business.dto.EventSearchCriteria;
+import com.easytickets.business.dto.OrganizerHistoryDto;
 import com.easytickets.business.dto.UpdateEventRequest;
 import com.easytickets.business.services.EventService;
 import com.easytickets.common.dto.ApiResponse;
@@ -90,5 +91,15 @@ public class EventController {
     @GetMapping("/categories")
     public ResponseEntity<ApiResponse<List<EventCategory>>> listCategories() {
         return ResponseEntity.ok(ApiResponse.ok(eventService.listCategories()));
+    }
+
+    /**
+     * Internal aggregation endpoint consumed by User Service (via Feign, forwarding
+     * the calling Organizer's JWT) to build the {@code /me/organizer-history} view.
+     */
+    @GetMapping("/organizer-history")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ApiResponse<OrganizerHistoryDto>> getOrganizerHistory(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(ApiResponse.ok(eventService.getOrganizerHistory(jwt.getSubject())));
     }
 }

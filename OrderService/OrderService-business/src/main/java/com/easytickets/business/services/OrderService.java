@@ -1,9 +1,12 @@
 package com.easytickets.business.services;
 
+import com.easytickets.business.dto.EventOrderStatsDto;
 import com.easytickets.business.dto.OrderDto;
 import com.easytickets.business.dto.event.PaymentFailedEvent;
 import com.easytickets.business.dto.event.PaymentSuccessEvent;
 import com.easytickets.business.dto.event.TicketReservedEvent;
+
+import java.util.List;
 
 public interface OrderService {
 
@@ -32,4 +35,16 @@ public interface OrderService {
      * no-op.
      */
     void markCancelled(PaymentFailedEvent event);
+
+    /**
+     * Buyer's own ticket purchase history, used by User Service's aggregated
+     * {@code /me/ticket-history} endpoint.
+     */
+    List<OrderDto> getMyTickets(String userId);
+
+    /**
+     * Ticket-sold count and revenue for PAID orders, grouped by event. Called by
+     * Event Service to build the organizer statistics view.
+     */
+    List<EventOrderStatsDto> getStatsByEventIds(List<String> eventIds);
 }

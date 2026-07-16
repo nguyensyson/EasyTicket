@@ -4,4 +4,11 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
+    <changeSet author="dev.team" id="V1_202607161700_create_notifications_table"
+               onValidationFail="MARK_RAN">
+        <sqlFile dbms="mysql"
+                 path="classpath:/db/sources/V1_202607161700_create_notifications_table.sql"
+                 relativeToChangelogFile="false"/>
+    </changeSet>
+
 </databaseChangeLog>

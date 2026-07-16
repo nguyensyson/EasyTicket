@@ -27,6 +27,12 @@ keycloak:
   client-id: ${KEYCLOAK_CLIENT_ID:user-service-client}
   client-secret: ${KEYCLOAK_CLIENT_SECRET:changeme}
 
+services:
+  order-service:
+    url: ${ORDER_SERVICE_URL:http://localhost:8083}
+  event-service:
+    url: ${EVENT_SERVICE_URL:http://localhost:8081}
+
 management:
   tracing:
     sampling:

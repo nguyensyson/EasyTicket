@@ -3,6 +3,7 @@ package com.easytickets.business.services;
 import com.easytickets.business.dto.PurchaseTicketRequest;
 import com.easytickets.business.dto.PurchaseTicketResponse;
 import com.easytickets.business.dto.TicketAvailabilityDto;
+import com.easytickets.business.dto.event.PaymentFailedEvent;
 
 import java.util.List;
 
@@ -22,4 +23,11 @@ public interface TicketService {
      * Idempotent – no-op if already loaded. Returns the number of ticket types loaded.
      */
     int loadInventory(String eventId);
+
+    /**
+     * Consumes {@code payment-failed} (Luồng 6) – releases the reserved stock back to
+     * Redis so it can be sold again. Idempotent: no-op if the reservation was already
+     * released (or its TTL expired).
+     */
+    void releaseReservation(PaymentFailedEvent event);
 }

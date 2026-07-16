@@ -2,6 +2,7 @@ package com.easytickets.business.repo;
 
 import com.easytickets.business.dto.ReservationResult;
 import com.easytickets.business.dto.TicketMetaDto;
+import com.easytickets.business.dto.TicketReservationDto;
 import com.easytickets.business.dto.TicketTypeDto;
 import com.easytickets.business.dto.event.TicketReservedEvent;
 
@@ -42,6 +43,12 @@ public interface TicketInventoryRepo {
      * when Order Service / Ticket Service consumes {@code payment-failed} (refund flow).
      */
     void saveReservation(TicketReservedEvent event, long ttlSeconds);
+
+    /**
+     * Reads back {@code ticket:reservation:{reservationId}} – empty if never saved,
+     * already released, or expired (used as the idempotency guard for the refund flow).
+     */
+    Optional<TicketReservationDto> getReservation(String reservationId);
 
     void deleteReservation(String reservationId);
 }

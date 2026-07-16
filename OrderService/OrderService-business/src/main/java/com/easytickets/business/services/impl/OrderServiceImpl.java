@@ -1,5 +1,6 @@
 package com.easytickets.business.services.impl;
 
+import com.easytickets.business.dto.EventOrderStatsDto;
 import com.easytickets.business.dto.OrderDto;
 import com.easytickets.business.dto.OrderStatus;
 import com.easytickets.business.dto.event.PaymentFailedEvent;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -88,5 +90,18 @@ public class OrderServiceImpl implements OrderService {
             orderRepo.save(updated);
             log.info("Order marked CANCELLED. orderId={}, reason={}", event.getOrderId(), event.getReason());
         }, () -> log.error("Received payment-failed for unknown order. orderId={}", event.getOrderId()));
+    }
+
+    @Override
+    public List<OrderDto> getMyTickets(String userId) {
+        return orderRepo.findByUserId(userId);
+    }
+
+    @Override
+    public List<EventOrderStatsDto> getStatsByEventIds(List<String> eventIds) {
+        if (eventIds.isEmpty()) {
+            return List.of();
+        }
+        return orderRepo.sumPaidStatsByEventIds(eventIds);
     }
 }

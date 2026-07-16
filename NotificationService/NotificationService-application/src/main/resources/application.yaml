@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: NotificationService-application
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/notification_service_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        show_sql: false
+  liquibase:
+    enabled: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:notification-service}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.easytickets.business.dto.event
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/easyticket/protocol/openid-connect/certs}
+
+server:
+  port: ${SERVER_PORT:8085}
+
+keycloak:
+  client-id: ${KEYCLOAK_CLIENT_ID:notification-service-client}
+
+# AWS SQS – app publishes ticket-email messages here; a separate downstream
+# consumer reads the queue and sends the actual email via AWS SES.
+aws:
+  region: ${AWS_REGION:ap-southeast-1}
+
+notification:
+  queue:
+    ticket-email-url: ${TICKET_EMAIL_QUEUE_URL:}
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4318/v1/traces}
+    metrics:
+      export:
+        url: ${OTEL_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  level:
+    root: INFO
+    com.easytickets: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId},%X{spanId}] %-5level %logger{36} - %msg%n"
+
+url:
+  permit:
+    - path: "/actuator/health"
+      methods: ["GET"]

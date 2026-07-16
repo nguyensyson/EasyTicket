@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -72,5 +73,10 @@ public class EventRepositoryImpl implements EventRepo {
             event.setDeleteFlag(RecordStatus.DELETED);
             jpaRepository.save(event);
         });
+    }
+
+    @Override
+    public List<EventDto> findByOrganizerId(String organizerId) {
+        return jpaRepository.findByOrganizerId(organizerId).stream().map(mapper::toDto).toList();
     }
 }

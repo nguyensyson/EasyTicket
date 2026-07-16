@@ -4,6 +4,7 @@ import com.easytickets.business.dto.EventDto;
 import com.easytickets.business.dto.EventSearchCriteria;
 import com.easytickets.common.dto.PageResponse;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface EventRepo {
@@ -14,4 +15,6 @@ public interface EventRepo {
     PageResponse<EventDto> search(EventSearchCriteria criteria);
 
     void softDelete(String id);
+
+    List<EventDto> findByOrganizerId(String organizerId);
 }

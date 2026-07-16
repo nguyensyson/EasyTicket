@@ -21,4 +21,5 @@ public final class AppConstants {
     public static final String INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR";
 
     public static final String TOPIC_TICKET_RESERVED = "ticket-reserved";
+    public static final String TOPIC_PAYMENT_FAILED = "payment-failed";
 }

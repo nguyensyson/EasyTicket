@@ -1,21 +1,28 @@
 package com.easytickets.business.services.impl;
 
+import com.easytickets.business.client.EventServiceClient;
+import com.easytickets.business.client.OrderServiceClient;
 import com.easytickets.business.config.KeycloakConfigProperties;
 import com.easytickets.business.dto.KeycloakTokenResponse;
 import com.easytickets.business.dto.LoginRequest;
 import com.easytickets.business.dto.LoginResponse;
+import com.easytickets.business.dto.OrganizerHistoryDto;
 import com.easytickets.business.dto.RegisterRequest;
 import com.easytickets.business.dto.RegisterResponse;
+import com.easytickets.business.dto.TicketHistoryDto;
 import com.easytickets.business.dto.UserProfileDto;
 import com.easytickets.business.dto.UserRole;
+import com.easytickets.business.exception.EventServiceUnavailableException;
 import com.easytickets.business.exception.InvalidCredentialsException;
 import com.easytickets.business.exception.KeycloakUnavailableException;
+import com.easytickets.business.exception.OrderServiceUnavailableException;
 import com.easytickets.business.exception.RegistrationFailedException;
 import com.easytickets.business.exception.UserAlreadyExistsException;
 import com.easytickets.business.repo.UserProfileRepo;
 import com.easytickets.business.services.UserService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.FeignException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +57,8 @@ public class UserServiceImpl implements UserService {
     private final UserProfileRepo userProfileRepo;
     private final RestTemplate keycloakRestTemplate;
     private final ObjectMapper objectMapper;
+    private final OrderServiceClient orderServiceClient;
+    private final EventServiceClient eventServiceClient;
 
     @Override
     public RegisterResponse register(RegisterRequest request, UserRole role) {
@@ -120,6 +129,26 @@ public class UserServiceImpl implements UserService {
                 .refreshToken(tokenResponse.getRefreshToken())
                 .roles(roles)
                 .build();
+    }
+
+    @Override
+    public List<TicketHistoryDto> getTicketHistory() {
+        try {
+            return orderServiceClient.getMyTickets().getData();
+        } catch (FeignException ex) {
+            log.error("Order Service unavailable while fetching ticket history", ex);
+            throw new OrderServiceUnavailableException("Order Service is unavailable", ex);
+        }
+    }
+
+    @Override
+    public OrganizerHistoryDto getOrganizerHistory() {
+        try {
+            return eventServiceClient.getOrganizerHistory().getData();
+        } catch (FeignException ex) {
+            log.error("Event Service unavailable while fetching organizer history", ex);
+            throw new EventServiceUnavailableException("Event Service is unavailable", ex);
+        }
     }
 
     @SuppressWarnings("unchecked")

@@ -1,0 +1,23 @@
+CREATE TABLE events (
+    id           CHAR(36)                                NOT NULL DEFAULT (UUID()),
+    organizer_id VARCHAR(255)                             NOT NULL,
+    title        VARCHAR(255)                             NOT NULL,
+    description  TEXT                                     NULL,
+    category     VARCHAR(50)                              NOT NULL,
+    location_id  CHAR(36)                                 NOT NULL,
+    location     VARCHAR(255)                              NOT NULL,
+    banner_url   VARCHAR(255)                              NULL,
+    start_time   DATETIME                                  NOT NULL,
+    end_time     DATETIME                                  NOT NULL,
+    status       ENUM('DRAFT', 'PUBLISHED', 'CANCELLED')  NOT NULL DEFAULT 'DRAFT',
+    delete_flag  ENUM('ACTIVE', 'DELETED')                NOT NULL DEFAULT 'ACTIVE',
+    created_by   VARCHAR(255)                              NULL,
+    created_at   TIMESTAMP                                 NULL,
+    updated_by   VARCHAR(255)                              NULL,
+    updated_at   TIMESTAMP                                 NULL,
+    PRIMARY KEY (id),
+    KEY idx_events_organizer_id (organizer_id),
+    KEY idx_events_location_id (location_id),
+    KEY idx_events_status (status),
+    CONSTRAINT fk_events_location FOREIGN KEY (location_id) REFERENCES locations (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -55,6 +55,8 @@ logging:
 
 url:
   permit:
+    - path: "/api/v1/users/login"
+      methods: ["POST"]
     - path: "/api/v1/users/register/buyer"
       methods: ["POST"]
     - path: "/api/v1/users/register/organizer"

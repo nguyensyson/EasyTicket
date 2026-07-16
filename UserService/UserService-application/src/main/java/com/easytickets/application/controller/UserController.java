@@ -1,5 +1,7 @@
 package com.easytickets.application.controller;
 
+import com.easytickets.business.dto.LoginRequest;
+import com.easytickets.business.dto.LoginResponse;
 import com.easytickets.business.dto.RegisterRequest;
 import com.easytickets.business.dto.RegisterResponse;
 import com.easytickets.business.dto.UserRole;
@@ -21,6 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse response = userService.login(request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
 
     @PostMapping("/register/buyer")
     public ResponseEntity<ApiResponse<RegisterResponse>> registerBuyer(@Valid @RequestBody RegisterRequest request) {

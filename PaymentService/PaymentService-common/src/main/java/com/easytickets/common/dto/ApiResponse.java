@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.slf4j.MDC;
 
 @Data
 @Builder
@@ -21,6 +22,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(true)
                 .data(data)
+                .traceId(currentTraceId())
                 .build();
     }
 
@@ -29,6 +31,7 @@ public class ApiResponse<T> {
                 .success(true)
                 .data(data)
                 .message(message)
+                .traceId(currentTraceId())
                 .build();
     }
 
@@ -37,6 +40,12 @@ public class ApiResponse<T> {
                 .success(false)
                 .errorCode(errorCode)
                 .message(message)
+                .traceId(currentTraceId())
                 .build();
+    }
+
+    private static String currentTraceId() {
+        String traceId = MDC.get("traceId");
+        return traceId != null ? traceId : "";
     }
 }

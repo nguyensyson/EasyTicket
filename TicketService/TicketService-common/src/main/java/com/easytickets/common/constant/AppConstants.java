@@ -19,4 +19,6 @@ public final class AppConstants {
     public static final String EVENT_SERVICE_UNAVAILABLE = "EVENT_SERVICE_UNAVAILABLE";
     public static final String ORDER_SERVICE_UNAVAILABLE = "ORDER_SERVICE_UNAVAILABLE";
     public static final String INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR";
+
+    public static final String TOPIC_TICKET_RESERVED = "ticket-reserved";
 }

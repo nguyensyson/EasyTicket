@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: PaymentService-application
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/payment_service_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        show_sql: false
+  liquibase:
+    enabled: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/easyticket/protocol/openid-connect/certs}
+
+server:
+  port: ${SERVER_PORT:8084}
+
+keycloak:
+  client-id: ${KEYCLOAK_CLIENT_ID:payment-service-client}
+
+services:
+  order-service:
+    url: ${ORDER_SERVICE_URL:http://localhost:8083}
+
+payment:
+  timeout-minutes: ${PAYMENT_TIMEOUT_MINUTES:2}
+  timeout-check-interval-ms: ${PAYMENT_TIMEOUT_CHECK_INTERVAL_MS:15000}
+  gateway:
+    simulator:
+      success-rate: ${PAYMENT_SIMULATOR_SUCCESS_RATE:0.7}
+      min-delay-seconds: ${PAYMENT_SIMULATOR_MIN_DELAY_SECONDS:2}
+      max-delay-seconds: ${PAYMENT_SIMULATOR_MAX_DELAY_SECONDS:5}
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4318/v1/traces}
+    metrics:
+      export:
+        url: ${OTEL_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  level:
+    root: INFO
+    com.easytickets: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId},%X{spanId}] %-5level %logger{36} - %msg%n"
+
+url:
+  permit:
+    - path: "/api/v1/payments/*/callback"
+      methods: ["POST"]
+    - path: "/actuator/health"
+      methods: ["GET"]

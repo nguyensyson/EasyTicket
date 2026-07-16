@@ -20,4 +20,8 @@ public final class AppConstants {
     public static final String TICKET_SERVICE_UNAVAILABLE = "TICKET_SERVICE_UNAVAILABLE";
     public static final String EVENT_SERVICE_UNAVAILABLE = "EVENT_SERVICE_UNAVAILABLE";
     public static final String INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR";
+
+    public static final String TOPIC_TICKET_RESERVED = "ticket-reserved";
+    public static final String TOPIC_PAYMENT_SUCCESS = "payment-success";
+    public static final String TOPIC_PAYMENT_FAILED = "payment-failed";
 }

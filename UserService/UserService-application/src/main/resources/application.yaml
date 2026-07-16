@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: UserService-application
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/user_service_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        show_sql: false
+  liquibase:
+    enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/easyticket/protocol/openid-connect/certs}
+
+server:
+  port: ${SERVER_PORT:8092}
+
+keycloak:
+  realm: ${KEYCLOAK_REALM:easyticket}
+  server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8080}
+  client-id: ${KEYCLOAK_CLIENT_ID:user-service-client}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:changeme}
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4318/v1/traces}
+    metrics:
+      export:
+        url: ${OTEL_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  level:
+    root: INFO
+    com.easytickets: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId},%X{spanId}] %-5level %logger{36} - %msg%n"
+
+url:
+  permit:
+    - path: "/api/v1/users/register/buyer"
+      methods: ["POST"]
+    - path: "/actuator/health"
+      methods: ["GET"]

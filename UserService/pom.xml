@@ -105,26 +105,16 @@
                 <version>1.8.5</version>
             </dependency>
 
-            <!-- Micrometer / OpenTelemetry – versions managed by Spring Boot BOM -->
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-tracing-bridge-otel</artifactId>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-exporter-otlp</artifactId>
-            </dependency>
-            <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-registry-prometheus</artifactId>
-            </dependency>
+            <!-- NOTE: io.micrometer:micrometer-tracing-bridge-otel, io.opentelemetry:opentelemetry-exporter-otlp,
+                 and io.micrometer:micrometer-registry-prometheus are already version-managed transitively via
+                 spring-boot-starter-parent's BOM — do not redeclare them here without a <version>, Maven will
+                 fail POM validation ("dependency.version is missing") since a dependencyManagement entry in this
+                 POM does not inherit a version from an ancestor BOM for itself. -->
 
-            <!-- Spring Cloud OpenFeign -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-starter-openfeign</artifactId>
-                <version>4.2.1</version>
-            </dependency>
+            <!-- NOTE: spring-cloud-starter-openfeign is intentionally not managed here — no @FeignClient
+                 exists yet, and Spring Cloud 4.2.1 targets Spring Boot 3.x's package layout, which breaks
+                 ApplicationContext startup under Spring Boot 4.1.0. Reintroduce with a Boot 4-compatible
+                 Spring Cloud release once Order/Event Service Feign clients are implemented. -->
         </dependencies>
     </dependencyManagement>
 

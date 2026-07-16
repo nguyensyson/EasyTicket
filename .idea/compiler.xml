@@ -39,6 +39,7 @@
         <module name="TicketService-migration" />
         <module name="NotificationService-application" />
         <module name="NotificationService-business" />
+        <module name="UserService-application" />
         <module name="EventService-infratructures" />
         <module name="OrderService-common" />
       </profile>

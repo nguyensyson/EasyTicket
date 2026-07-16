@@ -53,11 +53,11 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Cloud OpenFeign -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
+        <!-- NOTE: spring-cloud-starter-openfeign removed — no @FeignClient exists yet in this codebase,
+             and spring-cloud-starter-openfeign 4.2.1 is built against Spring Boot 3.x's package layout
+             (e.g. org.springframework.boot.web.context.WebServerInitializedEvent, relocated in Boot 4),
+             so it breaks ApplicationContext startup with Spring Boot 4.1.0. Re-add once a Spring Boot 4-
+             compatible Spring Cloud release is available, when Order/Event Service Feign clients are implemented. -->
 
         <!-- Internal: common -->
         <dependency>

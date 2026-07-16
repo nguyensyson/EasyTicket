@@ -41,6 +41,7 @@
     <file url="file://$PROJECT_DIR$/TicketService/TicketService-worker/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/TicketService/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/TicketService/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/UserService/UserService-application/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/UserService/UserService-business/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/UserService/UserService-common/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/UserService/UserService-infratructures/src/main/java" charset="UTF-8" />

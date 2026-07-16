@@ -1,12 +1,15 @@
 package com.easytickets.application.controller;
 
+import com.easytickets.business.dto.AccountStatus;
 import com.easytickets.business.dto.LoginRequest;
 import com.easytickets.business.dto.LoginResponse;
 import com.easytickets.business.dto.OrganizerHistoryDto;
 import com.easytickets.business.dto.RegisterRequest;
 import com.easytickets.business.dto.RegisterResponse;
 import com.easytickets.business.dto.TicketHistoryDto;
+import com.easytickets.business.dto.UpdateUserStatusRequest;
 import com.easytickets.business.dto.UserRole;
+import com.easytickets.business.dto.UserSummaryDto;
 import com.easytickets.business.services.UserService;
 import com.easytickets.common.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -15,9 +18,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -63,5 +69,22 @@ public class UserController {
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ApiResponse<OrganizerHistoryDto>> getOrganizerHistory() {
         return ResponseEntity.ok(ApiResponse.ok(userService.getOrganizerHistory()));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserSummaryDto>>> getUsers(
+            @RequestParam(required = false) UserRole role,
+            @RequestParam(required = false) AccountStatus status) {
+        return ResponseEntity.ok(ApiResponse.ok(userService.getUsers(role, status)));
+    }
+
+    @PatchMapping("/{userId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> updateUserStatus(
+            @PathVariable String userId,
+            @Valid @RequestBody UpdateUserStatusRequest request) {
+        userService.updateUserStatus(userId, request.getStatus());
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

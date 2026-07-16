@@ -14,6 +14,7 @@ public final class AppConstants {
     public static final String INVALID_TOKEN = "INVALID_TOKEN";
     public static final String FORBIDDEN = "FORBIDDEN";
     public static final String PROFILE_NOT_FOUND = "PROFILE_NOT_FOUND";
+    public static final String USER_NOT_FOUND = "USER_NOT_FOUND";
     public static final String USER_ALREADY_EXISTS = "USER_ALREADY_EXISTS";
     public static final String REGISTRATION_FAILED = "REGISTRATION_FAILED";
     public static final String KEYCLOAK_UNAVAILABLE = "KEYCLOAK_UNAVAILABLE";

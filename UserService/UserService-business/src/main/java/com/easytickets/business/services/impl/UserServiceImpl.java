@@ -3,6 +3,7 @@ package com.easytickets.business.services.impl;
 import com.easytickets.business.client.EventServiceClient;
 import com.easytickets.business.client.OrderServiceClient;
 import com.easytickets.business.config.KeycloakConfigProperties;
+import com.easytickets.business.dto.AccountStatus;
 import com.easytickets.business.dto.KeycloakTokenResponse;
 import com.easytickets.business.dto.LoginRequest;
 import com.easytickets.business.dto.LoginResponse;
@@ -12,17 +13,20 @@ import com.easytickets.business.dto.RegisterResponse;
 import com.easytickets.business.dto.TicketHistoryDto;
 import com.easytickets.business.dto.UserProfileDto;
 import com.easytickets.business.dto.UserRole;
+import com.easytickets.business.dto.UserSummaryDto;
 import com.easytickets.business.exception.EventServiceUnavailableException;
 import com.easytickets.business.exception.InvalidCredentialsException;
 import com.easytickets.business.exception.KeycloakUnavailableException;
 import com.easytickets.business.exception.OrderServiceUnavailableException;
 import com.easytickets.business.exception.RegistrationFailedException;
 import com.easytickets.business.exception.UserAlreadyExistsException;
+import com.easytickets.business.exception.UserNotFoundException;
 import com.easytickets.business.repo.UserProfileRepo;
 import com.easytickets.business.services.UserService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,8 +48,10 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -151,6 +157,61 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public List<UserSummaryDto> getUsers(UserRole role, AccountStatus status) {
+        String realm = keycloakProperties.getRealm();
+        String clientUuid = resolveClientUuid(realm);
+        List<UserRole> rolesToFetch = role != null ? List.of(role) : List.of(UserRole.values());
+
+        Map<String, UserRepresentation> usersById = new LinkedHashMap<>();
+        Map<String, UserRole> roleById = new LinkedHashMap<>();
+        for (UserRole r : rolesToFetch) {
+            List<UserRepresentation> members = keycloak.realm(realm).clients().get(clientUuid)
+                    .roles().get(r.name()).getUserMembers();
+            for (UserRepresentation member : members) {
+                usersById.putIfAbsent(member.getId(), member);
+                roleById.putIfAbsent(member.getId(), r);
+            }
+        }
+
+        List<UserRepresentation> filtered = usersById.values().stream()
+                .filter(u -> status == null || toAccountStatus(u.isEnabled()) == status)
+                .toList();
+
+        Map<String, UserProfileDto> profilesById = userProfileRepo
+                .findByIds(filtered.stream().map(UserRepresentation::getId).toList()).stream()
+                .collect(Collectors.toMap(UserProfileDto::getId, p -> p));
+
+        return filtered.stream()
+                .map(u -> UserSummaryDto.builder()
+                        .id(u.getId())
+                        .username(u.getUsername())
+                        .email(u.getEmail())
+                        .fullName(profilesById.containsKey(u.getId()) ? profilesById.get(u.getId()).getFullName() : null)
+                        .role(roleById.get(u.getId()))
+                        .status(toAccountStatus(u.isEnabled()))
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public void updateUserStatus(String userId, AccountStatus status) {
+        String realm = keycloakProperties.getRealm();
+        UserRepresentation representation;
+        try {
+            representation = keycloak.realm(realm).users().get(userId).toRepresentation();
+        } catch (NotFoundException ex) {
+            throw new UserNotFoundException("User not found: " + userId);
+        }
+        representation.setEnabled(status == AccountStatus.ACTIVE);
+        keycloak.realm(realm).users().get(userId).update(representation);
+        log.info("User status updated. userId={}, status={}", userId, status);
+    }
+
+    private AccountStatus toAccountStatus(Boolean enabled) {
+        return Boolean.TRUE.equals(enabled) ? AccountStatus.ACTIVE : AccountStatus.LOCKED;
+    }
+
     @SuppressWarnings("unchecked")
     private List<String> extractRoles(String accessToken) {
         try {
@@ -210,12 +271,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private void assignRole(String realm, String keycloakUserId, UserRole role) {
-        String clientId = keycloakProperties.getClientId();
-        List<ClientRepresentation> clients = keycloak.realm(realm).clients().findByClientId(clientId);
-        if (clients.isEmpty()) {
-            throw new RegistrationFailedException("Keycloak client not found: " + clientId);
-        }
-        String clientUuid = clients.get(0).getId();
+        String clientUuid = resolveClientUuid(realm);
         RoleRepresentation roleRepresentation = keycloak.realm(realm)
                 .clients().get(clientUuid)
                 .roles().get(role.name())
@@ -223,6 +279,15 @@ public class UserServiceImpl implements UserService {
         keycloak.realm(realm).users().get(keycloakUserId)
                 .roles().clientLevel(clientUuid)
                 .add(List.of(roleRepresentation));
+    }
+
+    private String resolveClientUuid(String realm) {
+        String clientId = keycloakProperties.getClientId();
+        List<ClientRepresentation> clients = keycloak.realm(realm).clients().findByClientId(clientId);
+        if (clients.isEmpty()) {
+            throw new RegistrationFailedException("Keycloak client not found: " + clientId);
+        }
+        return clients.get(0).getId();
     }
 
     private void rollbackKeycloakUser(String realm, String keycloakUserId) {

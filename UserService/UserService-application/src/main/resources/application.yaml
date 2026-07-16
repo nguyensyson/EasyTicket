@@ -57,5 +57,7 @@ url:
   permit:
     - path: "/api/v1/users/register/buyer"
       methods: ["POST"]
+    - path: "/api/v1/users/register/organizer"
+      methods: ["POST"]
     - path: "/actuator/health"
       methods: ["GET"]

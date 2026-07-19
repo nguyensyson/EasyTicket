@@ -6,42 +6,100 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+      </profile>
+      <profile name="Annotation profile for EventService-common" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="EventService-common" />
+      </profile>
+      <profile name="Annotation profile for NotificationService-common" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="NotificationService-common" />
+      </profile>
+      <profile name="Annotation profile for OrderService-common" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="OrderService-common" />
+      </profile>
+      <profile name="Annotation profile for PaymentService-common" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="PaymentService-common" />
+      </profile>
+      <profile name="Annotation profile for TicketService-common" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="TicketService-common" />
+      </profile>
+      <profile name="Annotation profile for UserService-common" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="UserService-common" />
+      </profile>
+      <profile name="Annotation profile for UserService" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
+        </processorPath>
         <module name="EventService-worker" />
         <module name="UserService-infratructures" />
         <module name="NotificationService-migration" />
         <module name="EventService-application" />
         <module name="UserService-worker" />
         <module name="OrderService-migration" />
-        <module name="UserService-common" />
         <module name="EventService-migration" />
-        <module name="UserService-migration" />
         <module name="TicketService-business" />
+        <module name="UserService-migration" />
         <module name="NotificationService-infratructures" />
-        <module name="EventService-common" />
-        <module name="PaymentService-migration" />
         <module name="PaymentService-application" />
-        <module name="UserService-business" />
+        <module name="PaymentService-migration" />
         <module name="TicketService-application" />
         <module name="OrderService-application" />
+        <module name="UserService-business" />
         <module name="NotificationService-worker" />
         <module name="PaymentService-worker" />
         <module name="OrderService-business" />
-        <module name="TicketService-infratructures" />
         <module name="EventService-business" />
+        <module name="TicketService-infratructures" />
         <module name="OrderService-infratructures" />
-        <module name="NotificationService-common" />
         <module name="TicketService-worker" />
         <module name="PaymentService-business" />
         <module name="OrderService-worker" />
-        <module name="TicketService-common" />
         <module name="PaymentService-infratructures" />
-        <module name="PaymentService-common" />
-        <module name="TicketService-migration" />
         <module name="NotificationService-application" />
+        <module name="TicketService-migration" />
         <module name="NotificationService-business" />
         <module name="UserService-application" />
         <module name="EventService-infratructures" />
-        <module name="OrderService-common" />
       </profile>
     </annotationProcessing>
   </component>

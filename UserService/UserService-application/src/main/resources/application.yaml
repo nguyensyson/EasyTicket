@@ -21,6 +21,13 @@ spring:
 server:
   port: ${SERVER_PORT:8092}
 
+# OpenAPI/Swagger – expose qua API Gateway (local) tại /docs/user-service/
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 keycloak:
   realm: ${KEYCLOAK_REALM:easyticket}
   server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8080}
@@ -68,4 +75,10 @@ url:
     - path: "/api/v1/users/register/organizer"
       methods: ["POST"]
     - path: "/actuator/health"
+      methods: ["GET"]
+    - path: "/v3/api-docs/**"
+      methods: ["GET"]
+    - path: "/swagger-ui.html"
+      methods: ["GET"]
+    - path: "/swagger-ui/**"
       methods: ["GET"]

@@ -8,13 +8,40 @@
 | **Redis** | `redis:7-alpine` | `6379` | `redis://localhost:6379` |
 | **Zookeeper** | `wurstmeister/zookeeper:3.4.6` | `2181` | `localhost:2181` |
 | **Kafka** | `wurstmeister/kafka:2.13-2.8.1` | `9092` | `localhost:9092` |
-| **Kafka UI** | `provectuslabs/kafka-ui:latest` | `8085` | http://localhost:8085 |
+| **Kafka UI** | `provectuslabs/kafka-ui:latest` | `8086` | http://localhost:8086 |
 | **Keycloak** | `quay.io/keycloak/keycloak:26.0.4` | `8080` | http://localhost:8080 |
 | **Elasticsearch** | `elasticsearch:8.10.2` | `9200` | http://localhost:9200 |
 | **Logstash** | `logstash:8.10.0` | `5000` (TCP) | `localhost:5000` |
 | **Kibana** | `kibana:8.10.2` | `5601` | http://localhost:5601 |
 | **APM Server** | `apm-server:8.10.2` | `8200` | http://localhost:8200 |
 | **OTel Collector** | `otel/opentelemetry-collector-contrib:0.103.0` | `4317` (gRPC), `4318` (HTTP) | `localhost:4317/4318` |
+| **API Gateway** (local sim) | `nginx:1.27-alpine` | `8000` | http://localhost:8000 |
+| **Swagger UI** (aggregator) | `swaggerapi/swagger-ui:v5.17.14` | – (chỉ qua gateway) | http://localhost:8000/ |
+
+---
+
+## API Gateway (local simulation) + Swagger UI
+
+> **Lưu ý:** Ở môi trường **dev/prod**, API Gateway thật là **AWS API Gateway** – config NGINX dưới đây **chỉ dùng để giả lập ở local**, giúp dev có một entrypoint duy nhất giống production (routing theo path, rate limiting) và một trang Swagger UI tổng hợp OpenAPI docs của toàn bộ service.
+
+Container `api-gateway` (NGINX) lắng nghe port `8000`, forward request tới từng service Spring Boot **đang chạy trên host machine** (`mvnw spring-boot:run`) qua `host.docker.internal`, route theo path – giữ nguyên cách gọi API như khi lên AWS API Gateway thật (không thêm prefix tên service):
+
+| Path prefix | Forward tới | Port host |
+|---|---|---|
+| `/api/v1/events`, `/api/v1/locations` | Event Service | `8081` |
+| `/api/v1/tickets` | Ticket Service | `8082` |
+| `/api/v1/orders` | Order Service | `8083` |
+| `/api/v1/payments` | Payment Service | `8084` |
+| `/api/v1/notifications` | Notification Service | `8085` |
+| `/api/v1/users` | User Service | `8092` |
+
+Rate limiting cơ bản (giả lập chống bot của gateway thật) áp dụng cho toàn bộ `/api/v1/*`: `20 request/s/IP`, cho phép burst `40` request.
+
+**Swagger UI tổng hợp:** truy cập http://localhost:8000/ để xem OpenAPI docs của cả 6 service trong cùng một giao diện. Gateway proxy `/docs/{service}/v3/api-docs` tới `/v3/api-docs` của từng service (cần service đã chạy và có dependency `springdoc-openapi-starter-webmvc-ui` – đã thêm sẵn vào module `*-application` của cả 6 service).
+
+Cấu hình: `infra/nginx/gateway.conf` (mount vào `/etc/nginx/conf.d/default.conf` của container `api-gateway`).
+
+**Lưu ý khi chạy service:** service phải chạy trên đúng port khai báo trong `application.yaml` (`SERVER_PORT`) để gateway forward đúng; không cần chỉnh gì thêm ở phía service ngoài dependency Swagger đã có sẵn.
 
 ---
 
@@ -108,7 +135,7 @@ docker compose down -v
 | `payment-success` | 3 | Payment Service | Order, Notification |
 | `payment-failed` | 3 | Payment Service | Order, Ticket |
 
-Xem messages tại Kafka UI: http://localhost:8085
+Xem messages tại Kafka UI: http://localhost:8086
 
 ---
 

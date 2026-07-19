@@ -2,12 +2,18 @@
 # EasyTicket – Local Infrastructure Stack
 # Bao gồm: Database (MySQL + Redis), Message Broker (Kafka),
 #           Identity (Keycloak),
-#           Observability (OTel Collector + ELK Stack + APM)
+#           Observability (OTel Collector + ELK Stack + APM),
+#           API Gateway (NGINX – giả lập local) + Swagger UI
 #
 # Observability Pipeline:
 #   Spring Boot → OTel Collector (OTLP) → Traces → APM Server → Elasticsearch → Kibana
 #                                        → Logs   → Logstash  → Elasticsearch → Kibana
 #                                        → Metrics → Elasticsearch → Kibana
+#
+# API Gateway (local only – http://localhost:8000):
+#   Prod/dev dùng AWS API Gateway thật. Ở local, NGINX container đóng vai trò
+#   gateway giả lập: route request tới từng service (host.docker.internal),
+#   rate limiting cơ bản, và phục vụ Swagger UI tổng hợp OpenAPI docs.
 #
 # Khởi chạy: docker compose up -d
 # Dừng:      docker compose down
@@ -99,20 +105,20 @@ services:
   #    Port: 2181 (host) → 2181 (container)
   # ================================================================
   zookeeper:
-    image: wurstmeister/zookeeper:3.4.6
+    image: bitnami/zookeeper:3.9
     container_name: easyticket-zookeeper
     restart: unless-stopped
     ports:
       - "2181:2181"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+      ZOO_TICK_TIME: 2000
     volumes:
-      - zookeeper_data:/opt/zookeeper-3.4.6/data
+      - zookeeper_data:/bitnami/zookeeper
     networks:
       - easyticket-net
     healthcheck:
-      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      test: ["CMD", "zkServer.sh", "status"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -169,7 +175,8 @@ services:
   # ================================================================
   # 5. KAFKA UI – Provectus Kafka UI
   #    Giao diện web xem topics, messages, consumer groups
-  #    URL: http://localhost:8085
+  #    URL: http://localhost:8086
+  #    (Không dùng 8085 - trùng SERVER_PORT mặc định của NotificationService)
   # ================================================================
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -179,7 +186,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "8085:8080"
+      - "8086:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: easyticket-local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
@@ -413,3 +420,57 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  # ================================================================
+  # 12. API GATEWAY (LOCAL SIMULATION) – NGINX
+  #     Ở prod/dev, API Gateway thật là AWS API Gateway – config này
+  #     chỉ giả lập lớp gateway đó ở local để có 1 entrypoint duy nhất
+  #     (rate limiting, routing theo path) + phục vụ Swagger UI tổng hợp.
+  #     Các service Spring Boot chạy trên host (mvnw spring-boot:run),
+  #     nginx forward request ra host qua host.docker.internal.
+  #     Port: 8000 (host) → 80 (container)
+  # ================================================================
+  api-gateway:
+    image: nginx:1.27-alpine
+    container_name: easyticket-api-gateway
+    restart: unless-stopped
+    depends_on:
+      - swagger-ui
+    ports:
+      - "8000:80"
+    volumes:
+      - ./infra/nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - easyticket-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ================================================================
+  # 13. SWAGGER UI – Tổng hợp OpenAPI docs của toàn bộ service
+  #     Truy cập qua API Gateway: http://localhost:8000/
+  #     Không expose port trực tiếp – luôn đi qua gateway để URLs
+  #     tương đối (relative) trong cấu hình URLS bên dưới resolve
+  #     đúng, tránh lỗi CORS giữa các origin khác nhau.
+  # ================================================================
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.17.14
+    container_name: easyticket-swagger-ui
+    restart: unless-stopped
+    environment:
+      URLS: >-
+        [
+          { "url": "/docs/event-service/v3/api-docs", "name": "Event Service" },
+          { "url": "/docs/ticket-service/v3/api-docs", "name": "Ticket Service" },
+          { "url": "/docs/order-service/v3/api-docs", "name": "Order Service" },
+          { "url": "/docs/payment-service/v3/api-docs", "name": "Payment Service" },
+          { "url": "/docs/notification-service/v3/api-docs", "name": "Notification Service" },
+          { "url": "/docs/user-service/v3/api-docs", "name": "User Service" }
+        ]
+    networks:
+      - easyticket-net

@@ -25,7 +25,7 @@ Phần lớn service còn ở dạng **scaffold**, chưa có business logic:
 - **Observability**: OpenTelemetry Collector → Elasticsearch/Kibana (logs, traces qua APM, metrics).
 
 ```bash
-docker compose up -d          # khởi động hạ tầng local (MySQL, Redis, Kafka, Keycloak, ELK, OTel)
+docker compose up -d          # khởi động hạ tầng local (MySQL, Redis, Kafka, Keycloak, ELK, OTel, API Gateway NGINX + Swagger UI)
 ./mvnw clean package           # build service (chạy trong thư mục từng service)
 ./mvnw spring-boot:run          # chạy 1 service (module application, nếu đã tách module)
 ```

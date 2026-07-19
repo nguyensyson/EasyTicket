@@ -12,8 +12,10 @@ Với kiến trúc **Microservices** linh hoạt, EasyTicket cam kết mang lạ
 
 ```
                                   ┌─────────────────┐
-                                  │   NGINX Ingress  │
-                                  │   (API Gateway)  │
+                                  │   API Gateway    │
+                                  │ (AWS API Gateway │
+                                  │  dev/prod; NGINX │
+                                  │  giả lập ở local)│
                                   └────────┬─────────┘
                                            │
         ┌───────────────┬─────────────────┼───────────────┬───────────────┐
@@ -46,7 +48,7 @@ UserService không sở hữu nghiệp vụ xác thực — nó là **lớp trun
 | Thành phần | Công nghệ |
 |---|---|
 | Backend | Java 21, Spring Boot 4.1.0, Maven multi-module |
-| API Gateway | NGINX Ingress Controller |
+| API Gateway | **AWS API Gateway** (dev/prod); **NGINX** (giả lập local qua `docker-compose`, kèm Swagger UI tổng hợp) |
 | Database | MySQL (Database per Service) |
 | Cache & Inventory | Redis + Lua Script |
 | Message Broker | Apache Kafka |
@@ -59,7 +61,7 @@ UserService không sở hữu nghiệp vụ xác thực — nó là **lớp trun
 
 | Service | Vai trò | Database |
 |---|---|---|
-| **API Gateway** | Rate-limiting, chống bot, TLS termination, điều hướng request | – |
+| **API Gateway** | Rate-limiting, chống bot, TLS termination, điều hướng request. Dev/prod: AWS API Gateway. Local: NGINX container (`docker-compose`) + Swagger UI tổng hợp tại `http://localhost:8000` | – |
 | **Event Service** | CRUD sự kiện/loại vé/giá, lên lịch flash sale, cache Redis toàn bộ GET (read-heavy) | MySQL (`event_db`) |
 | **Ticket Service** | Nạp tồn kho vé lên Redis khi flash sale bắt đầu, xử lý mua vé bằng Lua Script (CHECK & DECREMENT), publish `ticket-reserved`, lắng nghe `payment-failed` để hoàn vé | Redis (nguồn sự thật tồn kho duy nhất) |
 | **Order Service** | Consume `ticket-reserved` để tạo order `PENDING_PAYMENT`, cập nhật `PAID`/`CANCELLED` theo Kafka event từ Payment Service | MySQL (`order_db`) |
@@ -373,7 +375,7 @@ Theo nguyên tắc kiến trúc (`.claude/rules/product.md`), **Redis là nguồ
 **Mô tả:** Đây là luồng quan trọng nhất của hệ thống — phải đảm bảo không sập web, không bán vượt vé, phản hồi mili-giây.
 
 **Luồng gọi API chi tiết:**
-1. Buyer click "Mua vé" trên client → request đi qua **API Gateway (NGINX Ingress)**, bị áp **rate limiting** theo IP/user để chặn bot trước khi chạm tới bất kỳ service nào.
+1. Buyer click "Mua vé" trên client → request đi qua **API Gateway** (AWS API Gateway ở dev/prod; NGINX giả lập ở local), bị áp **rate limiting** theo IP/user để chặn bot trước khi chạm tới bất kỳ service nào.
 2. Gateway forward tới Ticket Service: `POST /api/v1/tickets/{eventId}/purchase` kèm JWT (role `BUYER`), body `{ ticketTypeId, quantity }`.
 3. Ticket Service xác thực JWT (OAuth2 Resource Server), sau đó thực thi **Lua Script** trên Redis cho key `ticket:inventory:{eventId}:{ticketTypeId}`:
    - Script kiểm tra (`CHECK`) tồn kho hiện tại ≥ `quantity` yêu cầu.
@@ -456,14 +458,14 @@ Theo nguyên tắc kiến trúc (`.claude/rules/product.md`), **Redis là nguồ
 
 ## Cài đặt & Chạy
 
-> _Hướng dẫn đầy đủ (biến môi trường, Dockerfile từng service) sẽ được cập nhật khi các service hoàn thiện — hiện repo chưa có Dockerfile/K8s manifest, `docker-compose.yml` chỉ chạy hạ tầng phụ trợ local._
+> _Hướng dẫn đầy đủ (biến môi trường, Dockerfile từng service) sẽ được cập nhật khi các service hoàn thiện — hiện repo chưa có Dockerfile/K8s manifest cho service nghiệp vụ, `docker-compose.yml` chạy hạ tầng phụ trợ local (MySQL, Redis, Kafka, Keycloak, ELK, OTel Collector) và API Gateway giả lập (NGINX + Swagger UI)._
 
 ```bash
 # Clone repository
 git clone <repository-url>
 cd EasyTicket
 
-# Khởi động hạ tầng local (MySQL, Redis, Kafka, Keycloak, ELK, OTel Collector)
+# Khởi động hạ tầng local + API Gateway giả lập + Swagger UI
 docker compose up -d
 
 # Build một service (chạy trong thư mục từng service, ví dụ UserService)
@@ -473,6 +475,13 @@ cd UserService
 # Chạy module application của service (khi đã có business logic)
 ./mvnw spring-boot:run -pl UserService-application
 ```
+
+Sau khi cả hạ tầng và service cần dùng đã chạy, gọi API qua **API Gateway giả lập** thay vì gọi thẳng từng service:
+
+- Gateway: `http://localhost:8000` (route theo path `/api/v1/{resource}` tới đúng service, có rate limiting)
+- Swagger UI tổng hợp (OpenAPI docs toàn bộ service): `http://localhost:8000/`
+
+Chi tiết cấu hình gateway/swagger: `infra/nginx/gateway.conf`, `infra/README.md`.
 
 ## Liên hệ
 

@@ -58,4 +58,37 @@ Tạo steering file `changelog.md` để theo dõi lịch sử thay đổi toàn
 
 ---
 
+### [2026-07-19 00:00] – CONFIG – Thay API Gateway sang AWS API Gateway (dev/prod) + NGINX giả lập local kèm Swagger UI
+
+**Service/Module:** `docker-compose.yml`, `infra/nginx`, `EventService`, `TicketService`, `OrderService`, `PaymentService`, `NotificationService`, `UserService`, tài liệu (`Readme.md`, `.claude/rules`, `.kiro/steering`)
+**Loại:** CONFIG
+**Mô tả:**
+Ngừng dùng NGINX Ingress Controller (Kubernetes) làm API Gateway. Ở môi trường dev/prod, API Gateway thật chuyển sang **AWS API Gateway**. Ở local, thêm container NGINX (`api-gateway`) trong `docker-compose.yml` để giả lập lớp gateway đó cho dev: route request theo path-prefix tới từng service (chạy trên host qua `host.docker.internal`), rate limiting cơ bản (`limit_req_zone`), và tích hợp thêm **Swagger UI tổng hợp** (container `swagger-ui`) hiển thị OpenAPI docs của cả 6 service tại `http://localhost:8000`. Để Swagger UI có dữ liệu, đã thêm dependency `springdoc-openapi-starter-webmvc-ui` (v3.0.3) vào module `*-application` của cả 6 service, cấu hình path `/v3/api-docs`, `/swagger-ui.html`, và bổ sung các path này vào `url.permit` để `SecurityConfig` cho phép truy cập công khai. Toàn bộ tài liệu liên quan (README gốc, `infra/README.md`, `.claude/rules/product.md`, `.claude/rules/structure.md`, `.kiro/steering/product.md`) đã cập nhật theo thay đổi này.
+
+**Files thay đổi:**
+- `docker-compose.yml` – thêm service `api-gateway` (nginx) và `swagger-ui`
+- `infra/nginx/gateway.conf` – tạo mới, cấu hình reverse proxy + rate limit + docs aggregation
+- `infra/README.md` – thêm bảng + section hướng dẫn API Gateway/Swagger UI local
+- `{EventService,TicketService,OrderService,PaymentService,NotificationService,UserService}/pom.xml` – thêm managed dependency `springdoc-openapi-starter-webmvc-ui`
+- `{...}/{...}-application/pom.xml` – thêm dependency springdoc
+- `{...}/{...}-application/src/main/resources/application.yaml` – thêm config springdoc + `url.permit` cho `/v3/api-docs/**`, `/swagger-ui.html`, `/swagger-ui/**`
+- `Readme.md` – cập nhật kiến trúc, tech stack, bảng service, luồng flash sale, hướng dẫn cài đặt
+- `.claude/rules/product.md`, `.claude/rules/structure.md` – cập nhật mô tả API Gateway
+- `.kiro/steering/product.md` – cập nhật mô tả API Gateway
+
+---
+
+### [2026-07-19 00:30] – CONFIG – Fix xung đột port giữa Kafka UI và NotificationService
+
+**Service/Module:** `docker-compose.yml`, `infra/README.md`
+**Loại:** CONFIG
+**Mô tả:**
+Kafka UI đang map host port `8085:8080`, trùng với `SERVER_PORT` mặc định (`8085`) của `NotificationService` – nếu chạy `mvnw spring-boot:run` cho NotificationService cùng lúc hạ tầng Docker, hai tiến trình đụng port trên host. Chuyển Kafka UI sang host port `8086` (container port giữ nguyên `8080`), giữ nguyên port của NotificationService vì đã được tham chiếu ở nhiều nơi (gateway, Swagger docs).
+
+**Files thay đổi:**
+- `docker-compose.yml` – đổi port mapping Kafka UI từ `8085:8080` sang `8086:8080`
+- `infra/README.md` – cập nhật URL Kafka UI từ `localhost:8085` sang `localhost:8086`
+
+---
+
 <!-- Thêm entry mới ở trên dòng này -->

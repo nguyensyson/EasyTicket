@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
-@EnableJpaRepositories(basePackages = {"com.easytickets"})
+@EnableJpaRepositories(basePackages = {"com.easytickets"}, repositoryImplementationPostfix = "JpaFragment")
 @EntityScan(basePackages = {"com.easytickets"})
 public class JpaConfig {
 

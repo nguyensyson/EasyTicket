@@ -345,7 +345,7 @@ public class BusinessException extends RuntimeException {
 
 ### 3.2 Global Exception Handler
 
-Đặt trong `application` module tại `com.easytickets.application.exception`:
+Đặt trong `userServiceApplication` module tại `com.easytickets.application.exception`:
 
 ```java
 @RestControllerAdvice

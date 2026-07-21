@@ -4,7 +4,7 @@
 
 | Dependency | Version |
 |---|---|
-| Spring Boot | `4.1.0` |
+| Spring Boot | `4.0.7` |
 | Java | `21` |
 | Build tool | Maven (multi-module per service) |
 | Lombok | `1.18.30` |
@@ -66,7 +66,7 @@ RuntimeException
     └── {Domain}Exception             # ví dụ TicketSoldOutException
 ```
 
-`BusinessException` mang `errorCode` + `HttpStatus`. Xử lý tập trung qua `@RestControllerAdvice` (`GlobalExceptionHandler`) đặt trong module `application`.
+`BusinessException` mang `errorCode` + `HttpStatus`. Xử lý tập trung qua `@RestControllerAdvice` (`GlobalExceptionHandler`) đặt trong module `userServiceApplication`.
 
 **Quy tắc bắt buộc:**
 - Không bắt exception rồi nuốt im lặng – luôn log hoặc rethrow.

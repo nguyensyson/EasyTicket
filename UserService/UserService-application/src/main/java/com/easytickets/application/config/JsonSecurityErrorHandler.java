@@ -2,7 +2,7 @@ package com.easytickets.application.config;
 
 import com.easytickets.common.constant.AppConstants;
 import com.easytickets.common.dto.ApiResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

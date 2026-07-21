@@ -2,7 +2,7 @@ spring:
   application:
     name: UserService-application
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/user_service_db}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/user_db}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:password}
     driver-class-name: com.mysql.cj.jdbc.Driver

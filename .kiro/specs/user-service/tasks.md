@@ -5,7 +5,7 @@
 Implement the UserService microservice for the EasyTicket platform as a Maven multi-module Spring Boot 3.4.4 project. The service delegates authentication to Keycloak, owns the `user_profiles` MySQL table, exposes self-service and admin registration endpoints, profile management, and cross-service aggregation via Feign clients to Order Service and Event Service.
 
 Build order follows the standard EasyTicket module dependency direction:
-`common` → `migration` → `business` → `infratructures` → `application` → `worker`
+`common` → `migration` → `business` → `infratructures` → `userServiceApplication` → `worker`
 
 ---
 

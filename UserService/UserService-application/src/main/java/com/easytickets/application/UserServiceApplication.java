@@ -10,8 +10,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @ComponentScan(basePackages = "com.easytickets")
 @EnableMethodSecurity
 @EnableFeignClients(basePackages = "com.easytickets")
-public class Application {
+public class UserServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+        SpringApplication.run(UserServiceApplication.class, args);
     }
 }

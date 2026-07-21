@@ -16,7 +16,7 @@
     <description>Spring Boot entry point, Controllers, Security configuration</description>
 
     <properties>
-        <start-class>com.easytickets.application.Application</start-class>
+        <start-class>com.easytickets.application.UserServiceApplication</start-class>
     </properties>
 
     <dependencies>

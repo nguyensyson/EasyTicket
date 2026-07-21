@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.0</version>
+        <version>4.0.7</version>
         <relativePath/>
     </parent>
 
@@ -37,10 +37,23 @@
         <keycloak.version>26.0.4</keycloak.version>
         <lombok.version>1.18.30</lombok.version>
         <springdoc.version>3.0.3</springdoc.version>
+        <spring-cloud.version>2025.1.2</spring-cloud.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Cloud BOM – release train "Oakwood" (2025.1.x), the first
+                 compatible with Spring Boot 4.x. Manages spring-cloud-starter-openfeign
+                 and its transitive spring-cloud-commons/-context versions; do NOT pin
+                 those artifacts' versions individually, it must stay aligned with Boot 4.1. -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- Internal modules -->
             <dependency>
                 <groupId>com.easytickets</groupId>
@@ -111,13 +124,6 @@
                  spring-boot-starter-parent's BOM — do not redeclare them here without a <version>, Maven will
                  fail POM validation ("dependency.version is missing") since a dependencyManagement entry in this
                  POM does not inherit a version from an ancestor BOM for itself. -->
-
-            <!-- Spring Cloud OpenFeign -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-starter-openfeign</artifactId>
-                <version>4.2.1</version>
-            </dependency>
 
             <!-- Springdoc OpenAPI (Swagger UI) -->
             <dependency>

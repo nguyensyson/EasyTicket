@@ -244,7 +244,7 @@ HTTP Request
 
 Khi tạo một Microservice mới (ví dụ: `EventService`), làm theo thứ tự:
 
-1. **Tạo Maven Multi-Module Project** với 6 module: `application`, `business`, `common`, `infratructures`, `migration`, `worker`.
+1. **Tạo Maven Multi-Module Project** với 6 module: `userServiceApplication`, `business`, `common`, `infratructures`, `migration`, `worker`.
 2. **Parent POM** quản lý tất cả dependency versions trong `<dependencyManagement>`.
 3. **common module** – tạo `BaseEntity`, `AppConstants`, `ApiResponse`, exception classes dùng chung.
 4. **migration module** – tạo `changelog.xml` và SQL script đầu tiên.

@@ -19,7 +19,7 @@ Phần lớn service còn ở dạng **scaffold**, chưa có business logic:
 
 ## Tech stack & lệnh chính
 
-- **Backend**: Java 21, Spring Boot `4.1.0`, Maven multi-module.
+- **Backend**: Java 21, Spring Boot `4.0.7`, Maven multi-module.
 - **Database**: MySQL (mỗi service 1 schema riêng), Redis (cache + tồn kho vé).
 - **Message broker**: Apache Kafka. **Auth**: Keycloak (OAuth2/JWT). **Email**: AWS SES.
 - **Observability**: OpenTelemetry Collector → Elasticsearch/Kibana (logs, traces qua APM, metrics).

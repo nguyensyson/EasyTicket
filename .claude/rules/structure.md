@@ -114,13 +114,13 @@ Entity không bao giờ ra khỏi `infratructures`. Controller luôn trả `Resp
 
 ## 5. Checklist tạo service mới
 
-1. Tạo Maven Multi-Module Project với 6 module (`application`, `business`, `common`, `infratructures`, `migration`, `worker`).
+1. Tạo Maven Multi-Module Project với 6 module (`userServiceApplication`, `business`, `common`, `infratructures`, `migration`, `worker`).
 2. Parent POM quản lý version trong `<dependencyManagement>`.
 3. `common`: `BaseEntity`, `AppConstants`, `ApiResponse`, exception dùng chung.
 4. `migration`: `changelog.xml` + SQL script đầu tiên.
 5. `business`: DTO, Port interface, Service interface + impl, config.
 6. `infratructures`: Entity, JPA Repository, MapStruct Mapper, Adapter, `JpaConfig`.
-7. `application`: Controller, `SecurityConfig`, `application.yaml`, `Application.java`.
+7. `userServiceApplication`: Controller, `SecurityConfig`, `application.yaml`, `Application.java`.
 8. `worker`: Kafka consumer/producer nếu cần.
 9. `application.yaml` đủ: datasource, security oauth2, liquibase (tắt ở app, bật ở migration), logging, server port, OTel endpoint.
 10. `logback-spring.xml` với `LogstashTcpSocketAppender`.

@@ -10,14 +10,15 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
 ];
 
 export function LoginPage() {
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const state = location.state as { from?: string; registered?: boolean; email?: string } | null;
+  const [email, setEmail] = useState(state?.email || "");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("buyer");
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const from = (location.state as { from?: string } | null)?.from || null;
+  const from = state?.from || null;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,10 +35,15 @@ export function LoginPage() {
           Easy<span className="text-gold">Ticket</span>
         </div>
         <h1 className="mb-1.5 text-xl font-bold">Đăng nhập</h1>
+        {state?.registered && (
+          <p className="mb-4 rounded-lg bg-green-tint px-3 py-2 text-sm text-green">
+            Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.
+          </p>
+        )}
         <p className="mb-6 text-sm text-muted">
-          Bản demo giao diện — chưa kết nối User Service, đăng nhập chỉ mô
-          phỏng phiên làm việc cục bộ. Nếu email đã từng đăng ký, vai trò lưu
-          từ trước sẽ được dùng lại thay vì lựa chọn dưới đây.
+          Bản demo giao diện — chưa kết nối luồng đăng nhập tới User Service,
+          đăng nhập chỉ mô phỏng phiên làm việc cục bộ. Nếu email đã từng đăng
+          ký, vai trò lưu từ trước sẽ được dùng lại thay vì lựa chọn dưới đây.
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input

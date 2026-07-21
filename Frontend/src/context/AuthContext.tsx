@@ -16,7 +16,6 @@ type Directory = Record<string, { name: string; role: UserRole }>;
 interface AuthContextValue {
   user: AuthUser | null;
   login: (email: string, role: UserRole, name?: string) => void;
-  register: (name: string, email: string, role: UserRole) => void;
   logout: () => void;
 }
 
@@ -52,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem(STORAGE_KEY);
   }, [user]);
 
-  // Chưa có backend User Service/Keycloak — mock đăng nhập/đăng ký bằng một
+  // Đăng nhập (Luồng 2) chưa nối User Service/Keycloak — mock bằng một
   // "directory" lưu ở localStorage để nhớ vai trò (role) đã đăng ký cho mỗi email.
   const login = useCallback((email: string, role: UserRole, name?: string) => {
     const dir = loadDirectory();
@@ -66,17 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ name: resolvedName, email, role: resolvedRole });
   }, []);
 
-  const register = useCallback((name: string, email: string, role: UserRole) => {
-    const dir = loadDirectory();
-    dir[email] = { name, role };
-    saveDirectory(dir);
-    setUser({ name, email, role });
-  }, []);
-
   const logout = useCallback(() => setUser(null), []);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

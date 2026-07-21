@@ -13,8 +13,6 @@ import { useAuth } from "@/hooks/useAuth";
 
 const NAV_LINKS = [
   { label: "Sự kiện", href: "/" },
-  { label: "Địa điểm", href: "/" },
-  { label: "Bán vé cùng chúng tôi", href: "/organizer" },
 ];
 
 export function Header() {

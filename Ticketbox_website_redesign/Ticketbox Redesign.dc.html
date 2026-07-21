@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:#F5F1E8;}
+    a{color:#2D6A4F;text-decoration:none;}
+    a:hover{color:#D9B26F;}
+    ::-webkit-scrollbar{height:8px;width:8px;}
+    ::-webkit-scrollbar-thumb{background:#D9B26F;border-radius:4px;}
+  </style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;background:#F5F1E8;color:#161616;font-family:'Be Vietnam Pro',sans-serif;">
+
+  <header style="position:sticky;top:0;z-index:50;background:#161616;display:flex;align-items:center;gap:24px;padding:0 40px;height:72px;">
+    <div onClick="{{ goHome }}" style="cursor:pointer;font-size:24px;font-weight:800;color:#F5F1E8;letter-spacing:0.5px;">VÉ<span style="color:#D9B26F;">LỬA</span></div>
+    <nav style="display:flex;gap:28px;margin-left:12px;">
+      <a href="#" style="color:#F5F1E8;font-size:15px;font-weight:500;" style-hover="color:#D9B26F;">Sự kiện</a>
+      <a href="#" style="color:#F5F1E8;font-size:15px;font-weight:500;" style-hover="color:#D9B26F;">Địa điểm</a>
+      <a href="#" style="color:#F5F1E8;font-size:15px;font-weight:500;" style-hover="color:#D9B26F;">Bán vé cùng chúng tôi</a>
+    </nav>
+    <div style="flex:1;max-width:420px;margin-left:20px;">
+      <input type="text" placeholder="Tìm sự kiện, nghệ sĩ, địa điểm..." value="{{ searchQuery }}" onChange="{{ onSearch }}" style="width:100%;box-sizing:border-box;background:#232323;border:1px solid #3a3a3a;border-radius:8px;padding:9px 14px;color:#F5F1E8;font-size:14px;font-family:inherit;outline:none;"/>
+    </div>
+    <div style="flex:1;"></div>
+    <button style="background:transparent;border:1px solid #D9B26F;color:#D9B26F;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:#D9B26F;color:#161616;">Đăng nhập</button>
+  </header>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <main style="flex:1;">
+      <section style="position:relative;height:440px;overflow:hidden;">
+        <sc-for list="{{ heroSlides }}" as="slide" hint-placeholder-count="4">
+          <div style="{{ slide.wrapStyle }}">
+            <div style="position:absolute;inset:0;{{ slide.imgStyle }}"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,30,24,0.82) 0%,rgba(20,30,24,0.5) 55%,rgba(20,30,24,0.15) 100%);"></div>
+            <div style="position:relative;z-index:1;max-width:480px;padding:0 40px;">
+              <div style="display:inline-block;background:#D9B26F;color:#161616;font-size:12px;font-weight:700;padding:5px 13px;border-radius:100px;margin-bottom:16px;">{{ slide.categoryLabel }}</div>
+              <h1 style="font-size:34px;line-height:1.2;font-weight:800;color:#F5F1E8;margin:0 0 10px;">{{ slide.title }}</h1>
+              <p style="font-size:14px;color:#DCE6DF;margin:0 0 22px;">{{ slide.dateLabel }} · {{ slide.venue }}, {{ slide.city }}</p>
+              <button onClick="{{ slide.open }}" style="background:#D9B26F;color:#161616;border:none;padding:13px 26px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;" style-hover="background:#c79f5c;">Mua vé ngay</button>
+            </div>
+          </div>
+        </sc-for>
+        <div style="position:absolute;bottom:20px;left:0;right:0;z-index:2;display:flex;justify-content:center;gap:8px;">
+          <sc-for list="{{ heroDots }}" as="dot" hint-placeholder-count="4">
+            <div onClick="{{ dot.select }}" style="{{ dot.style }}"></div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="padding:36px 40px 8px;display:flex;gap:12px;flex-wrap:wrap;">
+        <sc-for list="{{ categoryTabs }}" as="tab" hint-placeholder-count="5">
+          <button onClick="{{ tab.select }}" style="{{ tab.style }}">{{ tab.label }}</button>
+        </sc-for>
+      </section>
+
+      <section style="padding:20px 40px 60px;">
+        <sc-if value="{{ hasResults }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:24px;">
+            <sc-for list="{{ filteredEvents }}" as="ev" hint-placeholder-count="6">
+              <div onClick="{{ ev.open }}" style="background:#FFFFFF;border:1px solid #E7E0D2;border-radius:14px;overflow:hidden;cursor:pointer;transition:transform 0.15s, box-shadow 0.15s;" style-hover="transform:translateY(-4px);box-shadow:0 12px 28px rgba(22,22,22,0.12);">
+                <div style="height:160px;position:relative;{{ ev.imgStyle }}">
+                  <span style="position:absolute;bottom:10px;left:10px;background:rgba(22,22,22,0.65);color:#F5F1E8;font-family:monospace;font-size:11px;padding:4px 8px;border-radius:5px;">{{ ev.imgLabel }}</span>
+                  <span style="position:absolute;top:10px;right:10px;background:#D9B26F;color:#161616;font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;">{{ ev.categoryLabel }}</span>
+                </div>
+                <div style="padding:16px;">
+                  <div style="font-size:12px;color:#2D6A4F;font-weight:700;margin-bottom:6px;">{{ ev.dateLabel }}</div>
+                  <div style="font-size:16px;font-weight:700;color:#161616;margin-bottom:6px;line-height:1.3;">{{ ev.title }}</div>
+                  <div style="font-size:13px;color:#6b6b63;margin-bottom:10px;">{{ ev.venue }} · {{ ev.city }}</div>
+                  <div style="font-size:15px;font-weight:800;color:#D9B26F;">Từ {{ ev.priceLabel }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasNoResults }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;padding:60px 0;color:#8a8a80;font-size:15px;">Không tìm thấy sự kiện phù hợp.</div>
+        </sc-if>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+    <main style="flex:1;">
+      <div style="background:#161616;padding:32px 40px 60px;">
+        <div onClick="{{ goHome }}" style="cursor:pointer;color:#D9B26F;font-weight:600;font-size:14px;margin-bottom:22px;">← Tất cả sự kiện</div>
+        <div style="max-width:1160px;margin:0 auto;display:flex;gap:24px;align-items:stretch;flex-wrap:wrap;">
+          <div style="flex:1;min-width:300px;max-width:380px;background:#F5F1E8;border-radius:16px;padding:26px;display:flex;flex-direction:column;">
+            <div style="display:inline-block;align-self:flex-start;background:#D9B26F;color:#161616;font-size:12px;font-weight:700;padding:5px 12px;border-radius:100px;margin-bottom:14px;">{{ selectedEvent.categoryLabel }}</div>
+            <h1 style="font-size:24px;font-weight:800;margin:0 0 18px;line-height:1.3;color:#161616;">{{ selectedEvent.title }}</h1>
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;">
+              <div style="width:18px;height:18px;border-radius:4px;background:#2D6A4F;flex-shrink:0;margin-top:2px;"></div>
+              <div style="font-size:14px;font-weight:600;color:#2D6A4F;">{{ selectedEvent.dateLabel }}</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:20px;">
+              <div style="width:18px;height:18px;border-radius:50%;background:#2D6A4F;flex-shrink:0;margin-top:2px;"></div>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:#2D6A4F;">{{ selectedEvent.venue }}</div>
+                <div style="font-size:13px;color:#5a5a52;">{{ selectedEvent.city }}</div>
+              </div>
+            </div>
+            <div style="border-top:1px solid #E0D9C8;margin:4px 0 18px;"></div>
+            <div style="font-size:13px;color:#5a5a52;margin-bottom:4px;">Giá từ</div>
+            <div style="font-size:22px;font-weight:800;color:#2D6A4F;margin-bottom:20px;">{{ selectedEvent.priceLabel }}</div>
+            <button onClick="{{ scrollToTickets }}" style="margin-top:auto;background:#2D6A4F;color:#F5F1E8;border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;" style-hover="background:#245840;">Mua vé ngay</button>
+          </div>
+          <div style="flex:1.4;min-width:320px;border-radius:16px;position:relative;overflow:hidden;{{ selectedEvent.imgStyle }}">
+            <span style="position:absolute;bottom:16px;left:16px;background:rgba(22,22,22,0.7);color:#F5F1E8;font-family:monospace;font-size:12px;padding:6px 10px;border-radius:6px;">{{ selectedEvent.imgLabel }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="max-width:1160px;margin:0 auto;padding:40px 40px 60px;display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="flex:2;min-width:320px;background:#161616;border-radius:14px;overflow:hidden;">
+          <div style="padding:16px 22px;color:#D9B26F;font-size:15px;font-weight:700;border-bottom:1px solid #2a2a2a;">Giới thiệu</div>
+          <div style="padding:22px;">
+            <p style="font-size:15px;line-height:1.8;color:#D8D3C4;margin:0 0 18px;">{{ selectedEvent.description }}</p>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:#B8B8AE;">
+              <div><strong style="color:#D9B26F;">Ban tổ chức</strong><br/>{{ selectedEvent.organizer }}</div>
+            </div>
+          </div>
+        </div>
+        <div ref="{{ ticketPanelRef }}" style="flex:1;min-width:300px;position:sticky;top:96px;">
+          <div style="background:#FFFFFF;border:1px solid #E7E0D2;border-radius:14px;padding:22px;">
+            <h3 style="font-size:16px;font-weight:700;margin:0 0 16px;">Chọn loại vé</h3>
+            <sc-for list="{{ ticketRows }}" as="t" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #EEE7D9;">
+                <div>
+                  <div style="font-size:14px;font-weight:700;">{{ t.name }}</div>
+                  <div style="font-size:13px;color:#6b6b63;">{{ t.priceLabel }}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <button onClick="{{ t.dec }}" style="width:28px;height:28px;border-radius:8px;border:1px solid #D9B26F;background:#F5F1E8;color:#161616;font-weight:700;cursor:pointer;">–</button>
+                  <span style="width:18px;text-align:center;font-weight:700;">{{ t.qty }}</span>
+                  <button onClick="{{ t.inc }}" style="width:28px;height:28px;border-radius:8px;border:none;background:#D9B26F;color:#161616;font-weight:700;cursor:pointer;">+</button>
+                </div>
+              </div>
+            </sc-for>
+            <div style="display:flex;justify-content:space-between;padding:16px 0;font-size:15px;font-weight:700;">
+              <span>Tổng cộng</span><span style="color:#D9B26F;">{{ totalPriceLabel }}</span>
+            </div>
+            <button onClick="{{ goToCheckout }}" disabled="{{ noTicketsSelected }}" style="{{ checkoutButtonStyle }}">Tiếp tục thanh toán</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isCheckout }}" hint-placeholder-val="{{ false }}">
+    <main style="flex:1;padding:32px 40px 60px;max-width:920px;margin:0 auto;width:100%;box-sizing:border-box;">
+      <div onClick="{{ backToDetail }}" style="cursor:pointer;color:#2D6A4F;font-weight:600;font-size:14px;margin-bottom:20px;">← Quay lại chọn vé</div>
+      <h1 style="font-size:26px;font-weight:800;margin:0 0 24px;">Thanh toán</h1>
+      <div style="display:flex;gap:32px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:20px;">
+          <div style="background:#FFFFFF;border:1px solid #E7E0D2;border-radius:14px;padding:22px;">
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 14px;">Thông tin người mua</h3>
+            <input type="text" placeholder="Họ và tên" value="{{ buyerName }}" onChange="{{ onBuyerNameChange }}" style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #E0D9C8;border-radius:8px;font-size:14px;margin-bottom:12px;font-family:inherit;"/>
+            <input type="email" placeholder="Email" value="{{ buyerEmail }}" onChange="{{ onBuyerEmailChange }}" style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #E0D9C8;border-radius:8px;font-size:14px;margin-bottom:12px;font-family:inherit;"/>
+            <input type="tel" placeholder="Số điện thoại" value="{{ buyerPhone }}" onChange="{{ onBuyerPhoneChange }}" style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #E0D9C8;border-radius:8px;font-size:14px;font-family:inherit;"/>
+          </div>
+          <div style="background:#FFFFFF;border:1px solid #E7E0D2;border-radius:14px;padding:22px;">
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 14px;">Phương thức thanh toán</h3>
+            <sc-for list="{{ paymentOptions }}" as="p" hint-placeholder-count="3">
+              <div onClick="{{ p.select }}" style="{{ p.style }}">
+                <div style="width:18px;height:18px;border-radius:50%;border:2px solid #2D6A4F;display:flex;align-items:center;justify-content:center;">
+                  <sc-if value="{{ p.active }}" hint-placeholder-val="{{ false }}"><div style="width:10px;height:10px;border-radius:50%;background:#2D6A4F;"></div></sc-if>
+                </div>
+                <span style="font-size:14px;font-weight:600;">{{ p.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:1;min-width:280px;">
+          <div style="background:#161616;color:#F5F1E8;border-radius:14px;padding:22px;position:sticky;top:96px;">
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 16px;color:#D9B26F;">Đơn hàng — {{ selectedEvent.title }}</h3>
+            <sc-for list="{{ cartLines }}" as="line" hint-placeholder-count="2">
+              <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid #2a2a2a;">
+                <span>{{ line.name }} × {{ line.qty }}</span><span>{{ line.subtotalLabel }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;justify-content:space-between;padding:16px 0 20px;font-size:16px;font-weight:800;">
+              <span>Tổng</span><span style="color:#D9B26F;">{{ totalPriceLabel }}</span>
+            </div>
+            <button onClick="{{ confirmOrder }}" style="width:100%;background:#D9B26F;color:#161616;border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Xác nhận thanh toán</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isSuccess }}" hint-placeholder-val="{{ false }}">
+    <main style="flex:1;display:flex;align-items:center;justify-content:center;padding:60px 40px;">
+      <div style="text-align:center;max-width:440px;">
+        <div style="width:72px;height:72px;border-radius:50%;background:#2D6A4F;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+          <div style="width:24px;height:12px;border-left:4px solid #F5F1E8;border-bottom:4px solid #F5F1E8;transform:rotate(-45deg) translateY(-2px);"></div>
+        </div>
+        <h1 style="font-size:24px;font-weight:800;margin:0 0 12px;">Đặt vé thành công!</h1>
+        <p style="color:#6b6b63;font-size:14px;margin:0 0 6px;">Mã đơn hàng của bạn</p>
+        <p style="font-size:20px;font-weight:800;color:#D9B26F;margin:0 0 24px;letter-spacing:1px;">{{ orderId }}</p>
+        <p style="color:#3a3a3a;font-size:14px;margin:0 0 28px;">Vé điện tử đã được gửi tới {{ buyerEmail }}.</p>
+        <button onClick="{{ goHome }}" style="background:#161616;color:#F5F1E8;border:none;padding:13px 26px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Về trang chủ</button>
+      </div>
+    </main>
+  </sc-if>
+
+  <footer style="background:#161616;color:#B8B8AE;padding:36px 40px;font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+    <div>© 2026 VÉLỬA. Nền tảng bán vé sự kiện.</div>
+    <div style="display:flex;gap:20px;">
+      <a href="#" style="color:#B8B8AE;font-size:13px;">Về chúng tôi</a>
+      <a href="#" style="color:#B8B8AE;font-size:13px;">Điều khoản</a>
+      <a href="#" style="color:#B8B8AE;font-size:13px;">Hỗ trợ</a>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+const CATS = [
+  { key: 'noibat', label: 'Nổi bật' },
+  { key: 'concert', label: 'Nhạc sống' },
+  { key: 'sankhau', label: 'Sân khấu & Nghệ thuật' },
+  { key: 'thethao', label: 'Thể thao' },
+  { key: 'hoithao', label: 'Hội thảo' },
+];
+
+const CAT_STYLE = {
+  concert: { bg: '#EFE3C8', stripe: '#D9B26F', label: 'Nhạc sống' },
+  sankhau: { bg: '#E3ECE7', stripe: '#2D6A4F', label: 'Sân khấu' },
+  thethao: { bg: '#E8E8E6', stripe: '#161616', label: 'Thể thao' },
+  hoithao: { bg: '#EDE6D9', stripe: '#D9B26F', label: 'Hội thảo' },
+};
+
+const EVENTS = [
+  { id: 'e1', title: 'Đêm Nhạc Hoàng Hôn — Live Concert', category: 'concert', featured: true, date: '2026-08-14', dateLabel: '14 Th08, 2026', venue: 'SVĐ Quân Khu 7', city: 'TP.HCM', organizer: 'Sao Việt Entertainment',
+    description: 'Một đêm nhạc hoành tráng quy tụ dàn nghệ sĩ hàng đầu, hòa âm sống động cùng dàn nhạc giao hưởng trên sân khấu ánh sáng hiện đại.',
+    tickets: [ { name: 'Vé Thường', price: 450000 }, { name: 'Vé VIP', price: 850000 }, { name: 'Vé Premium', price: 1500000 } ] },
+  { id: 'e2', title: 'Vở Kịch "Giấc Mơ Phố Cổ"', category: 'sankhau', featured: true, date: '2026-08-02', dateLabel: '02 Th08, 2026', venue: 'Nhà Hát Thành Phố', city: 'TP.HCM', organizer: 'Sân Khấu Kịch Sài Gòn',
+    description: 'Câu chuyện cảm động về ký ức đô thị được kể qua ngôn ngữ sân khấu đương đại, dàn diễn viên gạo cội.',
+    tickets: [ { name: 'Vé Thường', price: 250000 }, { name: 'Vé VIP', price: 450000 } ] },
+  { id: 'e3', title: 'Giải Chạy Đêm Thành Phố 2026', category: 'thethao', featured: false, date: '2026-09-06', dateLabel: '06 Th09, 2026', venue: 'Công viên Bờ Sông', city: 'Hà Nội', organizer: 'Run Club VN',
+    description: 'Đường chạy 5km/10km/21km xuyên qua khu vực trung tâm, ánh sáng LED và nhạc sống dọc đường chạy.',
+    tickets: [ { name: 'Cự ly 5km', price: 200000 }, { name: 'Cự ly 10km', price: 300000 }, { name: 'Cự ly 21km', price: 450000 } ] },
+  { id: 'e4', title: 'Workshop: Kể Chuyện Bằng Thiết Kế', category: 'hoithao', featured: true, date: '2026-08-20', dateLabel: '20 Th08, 2026', venue: 'The Hive Coworking', city: 'TP.HCM', organizer: 'Design Circle',
+    description: 'Buổi workshop chuyên sâu về tư duy kể chuyện trong thiết kế sản phẩm, cùng các chuyên gia trong ngành.',
+    tickets: [ { name: 'Vé Cá Nhân', price: 350000 }, { name: 'Vé Nhóm (3 người)', price: 900000 } ] },
+  { id: 'e5', title: 'Concert Acoustic — Mùa Thu Về', category: 'concert', featured: false, date: '2026-09-12', dateLabel: '12 Th09, 2026', venue: 'Nhà Văn Hóa Thanh Niên', city: 'TP.HCM', organizer: 'Indie Sound',
+    description: 'Không gian ấm cúng cùng những giai điệu acoustic mộc mạc từ các nghệ sĩ indie được yêu thích.',
+    tickets: [ { name: 'Vé Thường', price: 300000 }, { name: 'Vé VIP', price: 550000 } ] },
+  { id: 'e6', title: 'Chung Kết Giải Bóng Rổ Vô Địch Quốc Gia', category: 'thethao', featured: true, date: '2026-08-29', dateLabel: '29 Th08, 2026', venue: 'Nhà Thi Đấu Phú Thọ', city: 'TP.HCM', organizer: 'VBA',
+    description: 'Trận chung kết đỉnh cao của mùa giải, hai đội mạnh nhất tranh ngôi vô địch trước hàng chục nghìn khán giả.',
+    tickets: [ { name: 'Khán đài thường', price: 150000 }, { name: 'Khán đài VIP', price: 400000 } ] },
+  { id: 'e7', title: 'Triển Lãm & Talkshow Nghệ Thuật Đương Đại', category: 'sankhau', featured: false, date: '2026-09-18', dateLabel: '18 Th09, 2026', venue: 'Bảo Tàng Mỹ Thuật', city: 'Hà Nội', organizer: 'Hanoi Art Collective',
+    description: 'Không gian trưng bày kết hợp talkshow cùng các nghệ sĩ đương đại về hành trình sáng tạo.',
+    tickets: [ { name: 'Vé Vào Cửa', price: 100000 }, { name: 'Vé Talkshow', price: 220000 } ] },
+  { id: 'e8', title: 'Hội Thảo Khởi Nghiệp Công Nghệ 2026', category: 'hoithao', featured: false, date: '2026-09-25', dateLabel: '25 Th09, 2026', venue: 'GEM Center', city: 'TP.HCM', organizer: 'StartupVN',
+    description: 'Kết nối founder, nhà đầu tư và chuyên gia công nghệ hàng đầu trong một ngày hội thảo đầy cảm hứng.',
+    tickets: [ { name: 'Vé Tiêu Chuẩn', price: 500000 }, { name: 'Vé VIP + Networking', price: 1200000 } ] },
+  { id: 'e9', title: 'Lễ Hội Âm Nhạc Điện Tử — Neon Nights', category: 'concert', featured: false, date: '2026-10-03', dateLabel: '03 Th10, 2026', venue: 'Công viên 23/9', city: 'TP.HCM', organizer: 'Neon Productions',
+    description: 'Đại tiệc âm nhạc điện tử với dàn DJ quốc tế, sân khấu ánh sáng laser hoành tráng.',
+    tickets: [ { name: 'Vé Thường', price: 400000 }, { name: 'Vé VIP', price: 900000 }, { name: 'Vé Premium', price: 1800000 } ] },
+];
+
+function fmt(n) { return n.toLocaleString('vi-VN') + 'đ'; }
+
+class Component extends DCLogic {
+  state = {
+    view: 'home',
+    selectedEventId: null,
+    activeCategory: 'noibat',
+    searchQuery: '',
+    cart: {},
+    buyerName: '', buyerEmail: '', buyerPhone: '',
+    payment: 'evi',
+    orderId: null,
+    heroIndex: 0,
+  };
+
+  componentDidMount() {
+    this._heroTimer = setInterval(() => {
+      const n = EVENTS.filter(e => e.featured).length;
+      this.setState(s => ({ heroIndex: (s.heroIndex + 1) % n }));
+    }, 5000);
+  }
+  componentWillUnmount() {
+    clearInterval(this._heroTimer);
+  }
+  setHeroIndex = (i) => this.setState({ heroIndex: i });
+  ticketPanelRef = React.createRef();
+  scrollToTickets = () => {
+    if (this.ticketPanelRef.current) {
+      const top = this.ticketPanelRef.current.getBoundingClientRect().top + window.scrollY - 90;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  };
+
+  goHome = () => this.setState({ view: 'home' });
+
+  openEvent = (id) => {
+    this.setState(s => ({ view: 'detail', selectedEventId: id, cart: s.cart[id] ? s.cart : { ...s.cart, [id]: {} } }));
+  };
+
+  setCategory = (key) => this.setState({ activeCategory: key });
+  onSearch = (e) => this.setState({ searchQuery: e.target.value });
+
+  incQty = (eventId, ticketName) => {
+    this.setState(s => {
+      const evCart = { ...(s.cart[eventId] || {}) };
+      evCart[ticketName] = (evCart[ticketName] || 0) + 1;
+      return { cart: { ...s.cart, [eventId]: evCart } };
+    });
+  };
+  decQty = (eventId, ticketName) => {
+    this.setState(s => {
+      const evCart = { ...(s.cart[eventId] || {}) };
+      evCart[ticketName] = Math.max(0, (evCart[ticketName] || 0) - 1);
+      return { cart: { ...s.cart, [eventId]: evCart } };
+    });
+  };
+
+  goToCheckout = () => this.setState({ view: 'checkout' });
+  backToDetail = () => this.setState({ view: 'detail' });
+
+  onBuyerNameChange = (e) => this.setState({ buyerName: e.target.value });
+  onBuyerEmailChange = (e) => this.setState({ buyerEmail: e.target.value });
+  onBuyerPhoneChange = (e) => this.setState({ buyerPhone: e.target.value });
+  setPayment = (key) => this.setState({ payment: key });
+
+  confirmOrder = () => {
+    const id = 'VL' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    this.setState({ orderId: id, view: 'success' });
+  };
+
+  buildImg = (ev) => {
+    const c = CAT_STYLE[ev.category];
+    return {
+      imgStyle: `background:${c.bg};background-image:repeating-linear-gradient(135deg, ${c.stripe}33, ${c.stripe}33 12px, transparent 12px, transparent 24px);`,
+      imgLabel: 'event image',
+      categoryLabel: c.label,
+    };
+  };
+
+  renderVals() {
+    const { view, selectedEventId, activeCategory, searchQuery, cart, buyerName, buyerEmail, buyerPhone, payment, orderId } = this.state;
+
+    const decorate = (ev) => ({ ...ev, ...this.buildImg(ev), priceLabel: fmt(Math.min(...ev.tickets.map(t => t.price))), open: () => this.openEvent(ev.id) });
+
+    let list = EVENTS;
+    if (activeCategory === 'noibat') list = list.filter(e => e.featured);
+    else list = list.filter(e => e.category === activeCategory);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(e => e.title.toLowerCase().includes(q) || e.venue.toLowerCase().includes(q) || e.city.toLowerCase().includes(q));
+    }
+    const filteredEvents = list.map(decorate);
+
+    const featuredList = EVENTS.filter(e => e.featured).map(decorate);
+    const { heroIndex } = this.state;
+    const heroSlides = featuredList.map((ev, i) => ({
+      ...ev,
+      wrapStyle: `position:absolute;inset:0;display:flex;align-items:center;transition:opacity 0.6s ease;opacity:${i === heroIndex ? 1 : 0};pointer-events:${i === heroIndex ? 'auto' : 'none'};`,
+    }));
+    const heroDots = featuredList.map((ev, i) => ({
+      key: ev.id,
+      select: () => this.setHeroIndex(i),
+      style: `width:8px;height:8px;border-radius:50%;cursor:pointer;background:${i === heroIndex ? '#D9B26F' : 'rgba(245,241,232,0.5)'};`,
+    }));
+
+    const categoryTabs = CATS.map(c => {
+      const active = c.key === activeCategory;
+      return {
+        key: c.key, label: c.label, select: () => this.setCategory(c.key),
+        style: `padding:10px 18px;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid ${active ? '#D9B26F' : '#D8CDB4'};background:${active ? '#D9B26F' : '#FFFFFF'};color:${active ? '#161616' : '#3a3a3a'};`,
+      };
+    });
+
+    const selectedEventRaw = EVENTS.find(e => e.id === selectedEventId) || EVENTS[0];
+    const selectedEvent = decorate(selectedEventRaw);
+    const eventCart = cart[selectedEventRaw.id] || {};
+
+    const ticketRows = selectedEventRaw.tickets.map(t => {
+      const qty = eventCart[t.name] || 0;
+      return {
+        name: t.name, priceLabel: fmt(t.price), qty,
+        inc: () => this.incQty(selectedEventRaw.id, t.name),
+        dec: () => this.decQty(selectedEventRaw.id, t.name),
+      };
+    });
+
+    const totalCount = ticketRows.reduce((s, t) => s + t.qty, 0);
+    const totalPrice = selectedEventRaw.tickets.reduce((s, t) => s + t.price * (eventCart[t.name] || 0), 0);
+
+    const cartLines = ticketRows.filter(t => t.qty > 0).map(t => ({
+      name: t.name, qty: t.qty, subtotalLabel: fmt(selectedEventRaw.tickets.find(x => x.name === t.name).price * t.qty),
+    }));
+
+    const noTicketsSelected = totalCount === 0;
+    const checkoutButtonStyle = `width:100%;margin-top:6px;border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;color:${noTicketsSelected ? '#8f8f86' : '#161616'};background:${noTicketsSelected ? '#EDE6D5' : '#D9B26F'};cursor:${noTicketsSelected ? 'not-allowed' : 'pointer'};`;
+
+    const PAY_OPTS = [ { key: 'evi', label: 'Ví điện tử' }, { key: 'card', label: 'Thẻ ngân hàng' }, { key: 'transfer', label: 'Chuyển khoản' } ];
+    const paymentOptions = PAY_OPTS.map(p => {
+      const active = p.key === payment;
+      return {
+        key: p.key, label: p.label, active, select: () => this.setPayment(p.key),
+        style: `display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid ${active ? '#2D6A4F' : '#E7E0D2'};background:${active ? '#EEF3EF' : '#FFFFFF'};cursor:pointer;margin-bottom:10px;`,
+      };
+    });
+
+    return {
+      isHome: view === 'home', isDetail: view === 'detail', isCheckout: view === 'checkout', isSuccess: view === 'success',
+      goHome: this.goHome, openEvent: this.openEvent, onSearch: this.onSearch, searchQuery,
+      heroSlides, heroDots, categoryTabs, filteredEvents, hasResults: filteredEvents.length > 0, hasNoResults: filteredEvents.length === 0,
+      selectedEvent, ticketRows, totalPriceLabel: fmt(totalPrice), noTicketsSelected, checkoutButtonStyle, goToCheckout: this.goToCheckout,
+      ticketPanelRef: this.ticketPanelRef, scrollToTickets: this.scrollToTickets,
+      backToDetail: this.backToDetail, cartLines, paymentOptions,
+      buyerName, buyerEmail, buyerPhone, onBuyerNameChange: this.onBuyerNameChange, onBuyerEmailChange: this.onBuyerEmailChange, onBuyerPhoneChange: this.onBuyerPhoneChange,
+      confirmOrder: this.confirmOrder, orderId,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

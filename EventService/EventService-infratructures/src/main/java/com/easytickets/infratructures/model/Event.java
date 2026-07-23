@@ -1,6 +1,5 @@
 package com.easytickets.infratructures.model;
 
-import com.easytickets.business.dto.EventCategory;
 import com.easytickets.business.dto.EventStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -32,9 +31,11 @@ public class Event extends BaseEntity {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "category", length = 50, nullable = false)
-    private EventCategory category;
+    @Column(name = "category_id", length = 36, nullable = false)
+    private String categoryId;
+
+    @Column(name = "category", length = 100, nullable = false)
+    private String category;
 
     @Column(name = "location_id", length = 36, nullable = false)
     private String locationId;

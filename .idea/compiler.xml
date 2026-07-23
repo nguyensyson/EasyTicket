@@ -61,7 +61,7 @@
         </processorPath>
         <module name="UserService-common" />
       </profile>
-      <profile name="Annotation profile for UserService" enabled="true">
+      <profile name="Annotation profile for PaymentService" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -82,14 +82,14 @@
         <module name="NotificationService-infratructures" />
         <module name="PaymentService-application" />
         <module name="PaymentService-migration" />
-        <module name="TicketService-application" />
         <module name="OrderService-application" />
+        <module name="TicketService-application" />
         <module name="UserService-business" />
         <module name="NotificationService-worker" />
         <module name="PaymentService-worker" />
         <module name="OrderService-business" />
-        <module name="EventService-business" />
         <module name="TicketService-infratructures" />
+        <module name="EventService-business" />
         <module name="OrderService-infratructures" />
         <module name="TicketService-worker" />
         <module name="PaymentService-business" />

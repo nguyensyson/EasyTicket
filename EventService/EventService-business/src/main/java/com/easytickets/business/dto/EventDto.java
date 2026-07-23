@@ -16,7 +16,8 @@ public class EventDto {
     private String organizerId;
     private String title;
     private String description;
-    private EventCategory category;
+    private String categoryId;
+    private String category;
     private String locationId;
     private String location;
     private String bannerUrl;

@@ -1,8 +1,8 @@
 package com.easytickets.business.services.impl;
 
 import com.easytickets.business.client.OrderServiceClient;
+import com.easytickets.business.dto.CategoryDto;
 import com.easytickets.business.dto.CreateEventRequest;
-import com.easytickets.business.dto.EventCategory;
 import com.easytickets.business.dto.EventDto;
 import com.easytickets.business.dto.EventOrderStatsDto;
 import com.easytickets.business.dto.EventSearchCriteria;
@@ -10,11 +10,13 @@ import com.easytickets.business.dto.EventStatus;
 import com.easytickets.business.dto.OrganizerEventStatsDto;
 import com.easytickets.business.dto.OrganizerHistoryDto;
 import com.easytickets.business.dto.UpdateEventRequest;
+import com.easytickets.business.exception.CategoryNotFoundException;
 import com.easytickets.business.exception.EventAccessDeniedException;
 import com.easytickets.business.exception.EventNotFoundException;
 import com.easytickets.business.exception.LocationNotFoundException;
 import com.easytickets.business.exception.OrderServiceUnavailableException;
 import com.easytickets.business.exception.ValidationException;
+import com.easytickets.business.repo.CategoryRepo;
 import com.easytickets.business.repo.EventRepo;
 import com.easytickets.business.repo.LocationRepo;
 import com.easytickets.business.services.EventService;
@@ -27,7 +29,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ public class EventServiceImpl implements EventService {
 
     private final EventRepo eventRepo;
     private final LocationRepo locationRepo;
+    private final CategoryRepo categoryRepo;
     private final OrderServiceClient orderServiceClient;
 
     @Override
@@ -46,12 +48,15 @@ public class EventServiceImpl implements EventService {
         validateSchedule(request.getStartTime(), request.getEndTime());
         locationRepo.findById(request.getLocationId())
                 .orElseThrow(() -> new LocationNotFoundException("Location not found: " + request.getLocationId()));
+        CategoryDto category = categoryRepo.findById(request.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found: " + request.getCategoryId()));
 
         EventDto event = EventDto.builder()
                 .organizerId(organizerId)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .category(request.getCategory())
+                .categoryId(category.getId())
+                .category(category.getName())
                 .locationId(request.getLocationId())
                 .location(request.getLocation())
                 .bannerUrl(request.getBannerUrl())
@@ -72,11 +77,14 @@ public class EventServiceImpl implements EventService {
         validateSchedule(request.getStartTime(), request.getEndTime());
         locationRepo.findById(request.getLocationId())
                 .orElseThrow(() -> new LocationNotFoundException("Location not found: " + request.getLocationId()));
+        CategoryDto category = categoryRepo.findById(request.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found: " + request.getCategoryId()));
 
         EventDto updated = existing.toBuilder()
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .category(request.getCategory())
+                .categoryId(category.getId())
+                .category(category.getName())
                 .locationId(request.getLocationId())
                 .location(request.getLocation())
                 .bannerUrl(request.getBannerUrl())
@@ -122,11 +130,6 @@ public class EventServiceImpl implements EventService {
     @Override
     public PageResponse<EventDto> searchPublishedEvents(EventSearchCriteria criteria) {
         return eventRepo.search(criteria);
-    }
-
-    @Override
-    public List<EventCategory> listCategories() {
-        return Arrays.asList(EventCategory.values());
     }
 
     @Override

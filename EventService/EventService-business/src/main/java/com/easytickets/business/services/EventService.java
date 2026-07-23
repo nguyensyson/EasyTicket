@@ -1,7 +1,6 @@
 package com.easytickets.business.services;
 
 import com.easytickets.business.dto.CreateEventRequest;
-import com.easytickets.business.dto.EventCategory;
 import com.easytickets.business.dto.EventDto;
 import com.easytickets.business.dto.EventSearchCriteria;
 import com.easytickets.business.dto.OrganizerHistoryDto;
@@ -34,8 +33,6 @@ public interface EventService {
     List<EventDto> listMyEvents(String organizerId);
 
     PageResponse<EventDto> searchPublishedEvents(EventSearchCriteria criteria);
-
-    List<EventCategory> listCategories();
 
     /**
      * Aggregated stats (events, tickets sold, revenue) across every event owned by

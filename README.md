@@ -135,10 +135,10 @@ Quy ước chung: mọi endpoint có prefix `api/v1/...`, trả về `ResponseEn
 | POST | `/api/v1/events` | ✓ | `ORGANIZER` | Tạo sự kiện mới (draft) |
 | PUT | `/api/v1/events/{eventId}` | ✓ | `ORGANIZER` (chủ sở hữu) | Cập nhật thông tin sự kiện |
 | DELETE | `/api/v1/events/{eventId}` | ✓ | `ORGANIZER` (chủ sở hữu) | Soft delete sự kiện |
-| GET | `/api/v1/events` | ✗ | — | Tìm kiếm/lọc sự kiện theo danh mục, thời gian, thành phố (`locationId`) (cache Redis) |
+| GET | `/api/v1/events` | ✗ | — | Tìm kiếm/lọc sự kiện theo danh mục (`categoryId`), thời gian, thành phố (`locationId`) (cache Redis) |
 | GET | `/api/v1/locations` | ✗ | — | Danh sách thành phố/tỉnh dùng để filter sự kiện (cache Redis) |
+| GET | `/api/v1/categories` | ✗ | — | Danh mục sự kiện (cache Redis) |
 | GET | `/api/v1/events/{eventId}` | ✗ | — | Chi tiết sự kiện — chỉ trả về event `PUBLISHED` (cache Redis) |
-| GET | `/api/v1/events/categories` | ✗ | — | Danh mục sự kiện |
 | GET | `/api/v1/events/mine` | ✓ | `ORGANIZER` | Danh sách toàn bộ sự kiện của chính mình (mọi trạng thái — `DRAFT`/`PUBLISHED`/`CANCELLED`), phục vụ trang "Sự kiện của tôi" |
 | GET | `/api/v1/events/{eventId}/manage` | ✓ | `ORGANIZER` (chủ sở hữu) | Chi tiết 1 sự kiện của chính mình bất kể trạng thái — dùng để load form chỉnh sửa (khác `GET /{eventId}` chỉ trả `PUBLISHED`) |
 | POST | `/api/v1/events/{eventId}/ticket-types` | ✓ | `ORGANIZER` (chủ sở hữu) | Tạo loại vé + giá + số lượng cho sự kiện — chỉ khi event còn `DRAFT` |
@@ -229,6 +229,12 @@ Nguyên tắc chung cho mọi bảng (áp dụng chuẩn `BaseEntity` — xem `.
 |---|---|---|---|
 | `name` | `VARCHAR(100)` | `NOT NULL`, `UNIQUE` | Tên thành phố/tỉnh, dùng để **filter** sự kiện theo khu vực. Ví dụ: `id=1, name="Hà Nội"` |
 
+**Bảng `categories`**
+
+| Cột | Kiểu | Ràng buộc | Ghi chú |
+|---|---|---|---|
+| `name` | `VARCHAR(100)` | `NOT NULL`, `UNIQUE` | Tên danh mục sự kiện, dùng để **filter**. Seed sẵn: "Nhạc sống", "Sân khấu & Nghệ thuật", "Thể thao", "Hội thảo", "Hội nghị", "Khác" |
+
 **Bảng `events`**
 
 | Cột | Kiểu | Ràng buộc | Ghi chú |
@@ -236,7 +242,8 @@ Nguyên tắc chung cho mọi bảng (áp dụng chuẩn `BaseEntity` — xem `.
 | `organizer_id` | `VARCHAR(255)` | `NOT NULL` | Keycloak user UUID của Organizer sở hữu sự kiện |
 | `title` | `VARCHAR(255)` | `NOT NULL` | |
 | `description` | `TEXT` | `NULL` | |
-| `category` | `VARCHAR(50)` | `NOT NULL` | Ví dụ: `MUSIC`, `SPORTS`, `WORKSHOP` |
+| `category_id` | `CHAR(36)` | `NOT NULL`, FK → `categories.id` | Danh mục sự kiện — dùng để filter (`GET /api/v1/events?categoryId=...`) |
+| `category` | `VARCHAR(100)` | `NOT NULL` | Tên danh mục tại thời điểm tạo/cập nhật event — service tự resolve từ `categories.name` theo `category_id` khi ghi, **không** nhận trực tiếp từ client, chỉ để hiển thị mà không cần join |
 | `location_id` | `CHAR(36)` | `NOT NULL`, FK → `locations.id` | Thành phố/tỉnh — dùng để filter (ví dụ `location_id = 1` → "Hà Nội") |
 | `location` | `VARCHAR(255)` | `NOT NULL` | Địa chỉ cụ thể của sự kiện. Ví dụ: `"23 Mễ Trì Hạ, Hà Nội"` — chỉ để hiển thị, **không** dùng để filter |
 | `banner_url` | `VARCHAR(255)` | `NULL` | |
@@ -244,7 +251,7 @@ Nguyên tắc chung cho mọi bảng (áp dụng chuẩn `BaseEntity` — xem `.
 | `end_time` | `DATETIME` | `NOT NULL` | |
 | `status` | `ENUM('DRAFT','PUBLISHED','CANCELLED')` | `NOT NULL DEFAULT 'DRAFT'` | |
 
-> Tách riêng `location_id` (FK → `locations`, ví dụ thành phố "Hà Nội") và `location` (chuỗi địa chỉ chi tiết, ví dụ "23 Mễ Trì Hạ, Hà Nội") để `GET /api/v1/events` có thể filter nhanh theo thành phố (`WHERE location_id = ?` hoặc query cache Redis theo `location_id`) mà không cần parse chuỗi địa chỉ tự do.
+> Tách riêng `location_id` (FK → `locations`, ví dụ thành phố "Hà Nội") và `location` (chuỗi địa chỉ chi tiết, ví dụ "23 Mễ Trì Hạ, Hà Nội") để `GET /api/v1/events` có thể filter nhanh theo thành phố (`WHERE location_id = ?` hoặc query cache Redis theo `location_id`) mà không cần parse chuỗi địa chỉ tự do. Tương tự, `category_id` (FK → `categories`) phục vụ filter còn `category` là tên danh mục denormalize sẵn trên hàng — khác với `location`, giá trị này do server tự resolve từ `categories.name`, request tạo/cập nhật event chỉ cần gửi `categoryId`.
 
 **Bảng `ticket_types`**
 

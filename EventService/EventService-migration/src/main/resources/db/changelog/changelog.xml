@@ -32,4 +32,18 @@
                  relativeToChangelogFile="false"/>
     </changeSet>
 
+    <changeSet author="dev.team" id="V5_202607231000_create_categories_table"
+               onValidationFail="MARK_RAN">
+        <sqlFile dbms="mysql"
+                 path="classpath:/db/sources/V5_202607231000_create_categories_table.sql"
+                 relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet author="dev.team" id="V6_202607231001_add_category_id_to_events"
+               onValidationFail="MARK_RAN">
+        <sqlFile dbms="mysql"
+                 path="classpath:/db/sources/V6_202607231001_add_category_id_to_events.sql"
+                 relativeToChangelogFile="false"/>
+    </changeSet>
+
 </databaseChangeLog>

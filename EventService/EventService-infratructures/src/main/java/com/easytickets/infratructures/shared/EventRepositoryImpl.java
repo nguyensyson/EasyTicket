@@ -42,8 +42,8 @@ public class EventRepositoryImpl implements EventRepo {
     public PageResponse<EventDto> search(EventSearchCriteria criteria) {
         Specification<Event> spec = (root, query, cb) -> cb.equal(root.get("status"), EventStatus.PUBLISHED);
 
-        if (criteria.getCategory() != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), criteria.getCategory()));
+        if (criteria.getCategoryId() != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("categoryId"), criteria.getCategoryId()));
         }
         if (criteria.getLocationId() != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("locationId"), criteria.getLocationId()));

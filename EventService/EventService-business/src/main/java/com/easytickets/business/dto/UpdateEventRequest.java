@@ -16,8 +16,9 @@ public class UpdateEventRequest {
 
     private String description;
 
-    @NotNull
-    private EventCategory category;
+    @NotBlank
+    @Size(max = 36)
+    private String categoryId;
 
     @NotBlank
     @Size(max = 36)

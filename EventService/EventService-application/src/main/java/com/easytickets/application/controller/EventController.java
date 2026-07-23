@@ -1,7 +1,6 @@
 package com.easytickets.application.controller;
 
 import com.easytickets.business.dto.CreateEventRequest;
-import com.easytickets.business.dto.EventCategory;
 import com.easytickets.business.dto.EventDto;
 import com.easytickets.business.dto.EventSearchCriteria;
 import com.easytickets.business.dto.OrganizerHistoryDto;
@@ -90,7 +89,7 @@ public class EventController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<EventDto>>> searchEvents(
-            @RequestParam(required = false) EventCategory category,
+            @RequestParam(required = false) String categoryId,
             @RequestParam(required = false) String locationId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
@@ -98,7 +97,7 @@ public class EventController {
             @RequestParam(defaultValue = "20") int size) {
 
         EventSearchCriteria criteria = EventSearchCriteria.builder()
-                .category(category)
+                .categoryId(categoryId)
                 .locationId(locationId)
                 .from(from)
                 .to(to)
@@ -107,11 +106,6 @@ public class EventController {
                 .build();
 
         return ResponseEntity.ok(ApiResponse.ok(eventService.searchPublishedEvents(criteria)));
-    }
-
-    @GetMapping("/categories")
-    public ResponseEntity<ApiResponse<List<EventCategory>>> listCategories() {
-        return ResponseEntity.ok(ApiResponse.ok(eventService.listCategories()));
     }
 
     /**

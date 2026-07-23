@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventSearchCriteria {
-    private EventCategory category;
+    private String categoryId;
     private String locationId;
     private LocalDateTime from;
     private LocalDateTime to;

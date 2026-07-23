@@ -1,5 +1,6 @@
 import { apiRequest } from "@/lib/apiClient";
 import type { UserRole } from "@/types/event";
+import type { TicketHistoryItemDto } from "@/types/orderApi";
 
 export interface RegisterPayload {
   username: string;
@@ -36,4 +37,9 @@ export function login(payload: LoginPayload): Promise<LoginResponse> {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// Luồng 8 (Buyer) — UserService forward JWT sang Order Service (GET /api/v1/orders/my-tickets) và trả nguyên vẹn.
+export function getTicketHistory(): Promise<TicketHistoryItemDto[]> {
+  return apiRequest<TicketHistoryItemDto[]>("/api/v1/users/me/ticket-history");
 }

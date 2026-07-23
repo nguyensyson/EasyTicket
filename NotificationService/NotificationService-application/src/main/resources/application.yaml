@@ -25,7 +25,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/easyticket/protocol/openid-connect/certs}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/EasyTicket/protocol/openid-connect/certs}
 
 server:
   port: ${SERVER_PORT:8085}
@@ -38,7 +38,7 @@ springdoc:
     path: /swagger-ui.html
 
 keycloak:
-  client-id: ${KEYCLOAK_CLIENT_ID:notification-service-client}
+  client-id: ${KEYCLOAK_CLIENT_ID:dat_ve_event}
 
 # AWS SQS – app publishes ticket-email messages here; a separate downstream
 # consumer reads the queue and sends the actual email via AWS SES.

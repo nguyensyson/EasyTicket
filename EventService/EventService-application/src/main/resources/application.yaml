@@ -21,7 +21,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/easyticket/protocol/openid-connect/certs}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/EasyTicket/protocol/openid-connect/certs}
 
 server:
   port: ${SERVER_PORT:8081}
@@ -34,7 +34,7 @@ springdoc:
     path: /swagger-ui.html
 
 keycloak:
-  client-id: ${KEYCLOAK_CLIENT_ID:event-service-client}
+  client-id: ${KEYCLOAK_CLIENT_ID:dat_ve_event}
 
 services:
   order-service:

@@ -117,13 +117,17 @@ docker compose down -v
 
 1. Truy cập http://localhost:8080
 2. Đăng nhập: `admin` / `admin`
-3. Tạo Realm mới: `SonNS_realm`
-4. Trong realm, tạo Client: `quan_ly_ke_toan`
+3. Tạo Realm mới: `EasyTicket`
+4. Trong realm, tạo Client: `dat_ve_event`
    - Client type: `OpenID Connect`
    - Client authentication: `On` (confidential)
-   - Copy client secret vào `application.yaml`
-5. Tạo roles: `ORGANIZER`, `TICKET_BUYER`, `SYSTEM_ADMIN`
+   - Capability config: bật **Direct access grants** (login password grant) và **Service accounts roles** (Keycloak Admin Client dùng client credentials để tạo user/gán role) — tắt **Authorization** (không dùng fine-grained authorization ở dự án này)
+   - Client secret hiện dùng: `SPEUTVI9aQDpmdt8SRr7Vf5EVyeeyVCk` (đã set làm default trong `application.yaml` mọi service qua `${KEYCLOAK_CLIENT_SECRET:...}`)
+   - Vào tab **Service accounts roles** → gán role `manage-users` của client `realm-management` để Admin API tạo user hoạt động
+5. Tạo roles (Client roles, trong client `dat_ve_event`): `ORGANIZER`, `BUYER`, `ADMIN` — đúng tên role dùng trong `@PreAuthorize("hasRole('...')")` ở toàn bộ service (xem README gốc, mục API Endpoints)
 6. Tạo user test và gán role
+
+> Toàn bộ 6 service dùng chung một client `dat_ve_event` cho `keycloak.client-id` — vì `CustomJwtAuthenticationConverter` đọc role từ claim `resource_access.<client-id>.roles`, nếu client-id giữa các service không khớp với client thật đã login thì token sẽ không có claim tương ứng và mọi request bị coi như không có role nào.
 
 ---
 

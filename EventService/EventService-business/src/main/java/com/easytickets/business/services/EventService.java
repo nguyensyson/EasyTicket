@@ -20,6 +20,19 @@ public interface EventService {
 
     EventDto getPublishedEvent(String eventId);
 
+    /**
+     * Fetch a single event owned by the caller, regardless of status — used by the
+     * Organizer management UI (draft/cancelled events are not visible via
+     * {@link #getPublishedEvent}).
+     */
+    EventDto getManagedEvent(String eventId, String organizerId);
+
+    /**
+     * All events owned by the caller, regardless of status — used to render the
+     * Organizer's "My events" list.
+     */
+    List<EventDto> listMyEvents(String organizerId);
+
     PageResponse<EventDto> searchPublishedEvents(EventSearchCriteria criteria);
 
     List<EventCategory> listCategories();

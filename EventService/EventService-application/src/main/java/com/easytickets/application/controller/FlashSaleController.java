@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,5 +32,10 @@ public class FlashSaleController {
                                                                       @AuthenticationPrincipal Jwt jwt) {
         FlashSaleDto created = flashSaleService.createFlashSale(eventId, request, jwt.getSubject());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(created));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<FlashSaleDto>> getFlashSale(@PathVariable String eventId) {
+        return ResponseEntity.ok(ApiResponse.ok(flashSaleService.getFlashSale(eventId)));
     }
 }

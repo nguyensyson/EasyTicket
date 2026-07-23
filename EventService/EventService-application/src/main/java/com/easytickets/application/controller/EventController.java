@@ -67,6 +67,27 @@ public class EventController {
         return ResponseEntity.ok(ApiResponse.ok(eventService.getPublishedEvent(eventId)));
     }
 
+    /**
+     * Owner-scoped list — includes DRAFT/CANCELLED events, unlike the public search
+     * above which only returns PUBLISHED events. Powers the Organizer "My events" UI.
+     */
+    @GetMapping("/mine")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ApiResponse<List<EventDto>>> listMyEvents(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(ApiResponse.ok(eventService.listMyEvents(jwt.getSubject())));
+    }
+
+    /**
+     * Owner-scoped single fetch, regardless of status — used to load an event into
+     * the Organizer edit form (draft/cancelled events 404 on {@code getEvent} above).
+     */
+    @GetMapping("/{eventId}/manage")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ApiResponse<EventDto>> getManagedEvent(@PathVariable String eventId,
+                                                                  @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(ApiResponse.ok(eventService.getManagedEvent(eventId, jwt.getSubject())));
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<EventDto>>> searchEvents(
             @RequestParam(required = false) EventCategory category,

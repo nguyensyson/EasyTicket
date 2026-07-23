@@ -137,14 +137,17 @@ Quy ước chung: mọi endpoint có prefix `api/v1/...`, trả về `ResponseEn
 | DELETE | `/api/v1/events/{eventId}` | ✓ | `ORGANIZER` (chủ sở hữu) | Soft delete sự kiện |
 | GET | `/api/v1/events` | ✗ | — | Tìm kiếm/lọc sự kiện theo danh mục, thời gian, thành phố (`locationId`) (cache Redis) |
 | GET | `/api/v1/locations` | ✗ | — | Danh sách thành phố/tỉnh dùng để filter sự kiện (cache Redis) |
-| GET | `/api/v1/events/{eventId}` | ✗ | — | Chi tiết sự kiện (cache Redis) |
+| GET | `/api/v1/events/{eventId}` | ✗ | — | Chi tiết sự kiện — chỉ trả về event `PUBLISHED` (cache Redis) |
 | GET | `/api/v1/events/categories` | ✗ | — | Danh mục sự kiện |
-| POST | `/api/v1/events/{eventId}/ticket-types` | ✓ | `ORGANIZER` (chủ sở hữu) | Tạo loại vé + giá + số lượng cho sự kiện |
-| PUT | `/api/v1/events/{eventId}/ticket-types/{ticketTypeId}` | ✓ | `ORGANIZER` (chủ sở hữu) | Cập nhật loại vé/giá/số lượng |
+| GET | `/api/v1/events/mine` | ✓ | `ORGANIZER` | Danh sách toàn bộ sự kiện của chính mình (mọi trạng thái — `DRAFT`/`PUBLISHED`/`CANCELLED`), phục vụ trang "Sự kiện của tôi" |
+| GET | `/api/v1/events/{eventId}/manage` | ✓ | `ORGANIZER` (chủ sở hữu) | Chi tiết 1 sự kiện của chính mình bất kể trạng thái — dùng để load form chỉnh sửa (khác `GET /{eventId}` chỉ trả `PUBLISHED`) |
+| POST | `/api/v1/events/{eventId}/ticket-types` | ✓ | `ORGANIZER` (chủ sở hữu) | Tạo loại vé + giá + số lượng cho sự kiện — chỉ khi event còn `DRAFT` |
+| PUT | `/api/v1/events/{eventId}/ticket-types/{ticketTypeId}` | ✓ | `ORGANIZER` (chủ sở hữu) | Cập nhật loại vé/giá/số lượng — chỉ khi event còn `DRAFT` |
 | GET | `/api/v1/events/{eventId}/ticket-types` | ✗ | — | Danh sách loại vé của sự kiện (Ticket Service dùng để nạp Redis) |
-| POST | `/api/v1/events/{eventId}/flash-sale` | ✓ | `ORGANIZER` (chủ sở hữu) | Lên lịch flash sale (`startAt`, `endAt`) |
-| GET | `/api/v1/events/{eventId}/dashboard` | ✓ | `ORGANIZER` (chủ sở hữu) | Dashboard doanh thu, số vé đã bán theo loại vé |
-| GET | `/api/v1/events/organizer-history` | ✓ | `ORGANIZER` | *(internal)* Thống kê toàn bộ sự kiện của organizer — được User Service gọi qua Feign |
+| POST | `/api/v1/events/{eventId}/flash-sale` | ✓ | `ORGANIZER` (chủ sở hữu) | Lên lịch flash sale (`startAt`, `endAt`) — chỉ khi event còn `DRAFT`, mỗi event chỉ 1 lần (không có endpoint sửa/xoá) |
+| GET | `/api/v1/events/{eventId}/flash-sale` | ✗ | — | Flash sale đã lên lịch cho sự kiện, `data: null` nếu chưa cấu hình |
+| GET | `/api/v1/events/{eventId}/dashboard` | ✓ | `ORGANIZER` (chủ sở hữu) | *(chưa implement — dùng tạm `organizer-history` bên dưới, lọc theo `eventId` ở client)* Dashboard doanh thu, số vé đã bán theo loại vé |
+| GET | `/api/v1/events/organizer-history` | ✓ | `ORGANIZER` | Thống kê toàn bộ sự kiện của organizer (số vé bán, doanh thu — batch từ Order Service). Dùng cho cả `/me/organizer-history` (User Service gọi qua Feign) lẫn Dashboard tổng quan/chi tiết của Organizer trên Frontend |
 
 ### 3. Ticket Service — `api/v1/tickets`
 
@@ -368,7 +371,9 @@ Theo nguyên tắc kiến trúc (`.claude/rules/product.md`), **Redis là nguồ
 4. `POST /api/v1/events/{eventId}/flash-sale` — cấu hình `startAt`/`endAt` cho đợt mở bán.
 5. Event Service ghi vào `event_db` và invalidate/refresh cache Redis tương ứng (mọi API `GET` là cache-first).
 6. Tại thời điểm `startAt`, `TicketService-worker` (Scheduler) gọi `GET /api/v1/events/{eventId}/ticket-types` để lấy danh sách loại vé + số lượng, sau đó ghi các key tồn kho vào Redis, ví dụ `ticket:inventory:{eventId}:{ticketTypeId} = quantity`. Từ thời điểm này, **Redis là nguồn sự thật duy nhất** cho tồn kho — Event Service không còn quyết định số vé còn lại.
-7. Organizer có thể theo dõi tiến độ bán vé qua `GET /api/v1/events/{eventId}/dashboard`.
+7. Organizer có thể theo dõi tiến độ bán vé qua `GET /api/v1/events/organizer-history` (xem mục *Dashboard* ở bảng endpoint Event Service).
+
+**Ràng buộc nghiệp vụ quan trọng (đã implement ở `EventServiceImpl`/`TicketTypeServiceImpl`/`FlashSaleServiceImpl`):** loại vé (bước 3) và flash sale (bước 4) chỉ có thể tạo/sửa khi event còn ở trạng thái `DRAFT` — publish (`PUT /api/v1/events/{eventId}` với `status=PUBLISHED`) khoá cấu hình vĩnh viễn (gọi lại `POST .../ticket-types` hoặc `POST .../flash-sale` sau khi publish sẽ trả `409 EventAlreadyPublishedException`). Vì vậy Frontend triển khai Luồng 3 theo đúng thứ tự: tạo event (draft) → thêm từng loại vé (lưu ngay theo API) → (tuỳ chọn) lên lịch flash sale (lưu ngay theo API) → bấm "Xuất bản" ở bước cuối. Không có form gộp gửi 1 lần.
 
 ### Luồng 4 — Flash Sale: Mua vé (luồng lõi, chống over-selling)
 

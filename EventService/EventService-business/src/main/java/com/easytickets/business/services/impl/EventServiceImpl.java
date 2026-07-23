@@ -110,6 +110,16 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public EventDto getManagedEvent(String eventId, String organizerId) {
+        return getOwnedEvent(eventId, organizerId);
+    }
+
+    @Override
+    public List<EventDto> listMyEvents(String organizerId) {
+        return eventRepo.findByOrganizerId(organizerId);
+    }
+
+    @Override
     public PageResponse<EventDto> searchPublishedEvents(EventSearchCriteria criteria) {
         return eventRepo.search(criteria);
     }

@@ -76,6 +76,8 @@ url:
       methods: ["GET"]
     - path: "/api/v1/events/*/ticket-types"
       methods: ["GET"]
+    - path: "/api/v1/events/*/flash-sale"
+      methods: ["GET"]
     - path: "/api/v1/events/*"
       methods: ["GET"]
     - path: "/actuator/health"

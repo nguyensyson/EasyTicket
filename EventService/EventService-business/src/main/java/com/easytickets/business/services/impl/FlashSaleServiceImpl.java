@@ -53,4 +53,9 @@ public class FlashSaleServiceImpl implements FlashSaleService {
         log.info("Flash sale scheduled. eventId={}, flashSaleId={}, organizerId={}", eventId, saved.getId(), organizerId);
         return saved;
     }
+
+    @Override
+    public FlashSaleDto getFlashSale(String eventId) {
+        return flashSaleRepo.findByEventId(eventId).orElse(null);
+    }
 }

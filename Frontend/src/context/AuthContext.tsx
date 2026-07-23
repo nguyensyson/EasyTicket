@@ -1,9 +1,12 @@
-import { createContext, useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useState } from "react";
 import type { ReactNode } from "react";
 import type { UserRole } from "@/types/event";
+import { decodeJwt } from "@/lib/jwt";
+import { getAccessToken, setTokens, clearTokens } from "@/lib/tokenStorage";
+import { login as loginRequest } from "@/services/userService";
+import { ApiError } from "@/lib/apiClient";
 
-const STORAGE_KEY = "veluawa_user";
-const DIRECTORY_KEY = "veluawa_user_directory";
+const STORAGE_KEY = "easyticket_user";
 
 export interface AuthUser {
   name: string;
@@ -11,17 +14,37 @@ export interface AuthUser {
   role: UserRole;
 }
 
-type Directory = Record<string, { name: string; role: UserRole }>;
-
 interface AuthContextValue {
   user: AuthUser | null;
-  login: (email: string, role: UserRole, name?: string) => void;
+  login: (username: string, password: string) => Promise<AuthUser>;
   logout: () => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
-function loadUser(): AuthUser | null {
+function resolveRole(roles: string[]): UserRole {
+  return roles.includes("ORGANIZER") ? "organizer" : "buyer";
+}
+
+// Backend chỉ trả accessToken/refreshToken/roles (Luồng 2) — name/email lấy từ claim JWT do Keycloak phát hành.
+function buildUser(accessToken: string, roles: string[]): AuthUser | null {
+  const payload = decodeJwt(accessToken);
+  if (!payload) return null;
+  const email = payload.email || payload.preferred_username || "";
+  const name = payload.name || payload.preferred_username || email.split("@")[0] || "Người dùng";
+  return { name, email, role: resolveRole(roles) };
+}
+
+function isAccessTokenValid(): boolean {
+  const token = getAccessToken();
+  if (!token) return false;
+  const payload = decodeJwt(token);
+  if (!payload?.exp) return true;
+  return payload.exp * 1000 > Date.now();
+}
+
+function loadStoredUser(): AuthUser | null {
+  if (!isAccessTokenValid()) return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as AuthUser) : null;
@@ -30,42 +53,27 @@ function loadUser(): AuthUser | null {
   }
 }
 
-function loadDirectory(): Directory {
-  try {
-    const raw = localStorage.getItem(DIRECTORY_KEY);
-    return raw ? (JSON.parse(raw) as Directory) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveDirectory(dir: Directory) {
-  localStorage.setItem(DIRECTORY_KEY, JSON.stringify(dir));
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(loadUser);
+  const [user, setUser] = useState<AuthUser | null>(loadStoredUser);
 
-  useEffect(() => {
-    if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    else localStorage.removeItem(STORAGE_KEY);
-  }, [user]);
-
-  // Đăng nhập (Luồng 2) chưa nối User Service/Keycloak — mock bằng một
-  // "directory" lưu ở localStorage để nhớ vai trò (role) đã đăng ký cho mỗi email.
-  const login = useCallback((email: string, role: UserRole, name?: string) => {
-    const dir = loadDirectory();
-    const existing = dir[email];
-    const resolvedRole = existing?.role ?? role;
-    const resolvedName = existing?.name ?? name ?? email.split("@")[0];
-    if (!existing) {
-      dir[email] = { name: resolvedName, role: resolvedRole };
-      saveDirectory(dir);
+  // Luồng 2 — Đăng nhập: delegate sang User Service, User Service delegate tiếp sang Keycloak.
+  const login = useCallback(async (username: string, password: string) => {
+    const { accessToken, refreshToken, roles } = await loginRequest({ username, password });
+    const resolved = buildUser(accessToken, roles);
+    if (!resolved) {
+      throw new ApiError("INVALID_TOKEN", "Không thể đọc thông tin phiên đăng nhập.");
     }
-    setUser({ name: resolvedName, email, role: resolvedRole });
+    setTokens(accessToken, refreshToken);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(resolved));
+    setUser(resolved);
+    return resolved;
   }, []);
 
-  const logout = useCallback(() => setUser(null), []);
+  const logout = useCallback(() => {
+    clearTokens();
+    localStorage.removeItem(STORAGE_KEY);
+    setUser(null);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

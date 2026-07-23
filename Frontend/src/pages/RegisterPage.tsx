@@ -35,7 +35,7 @@ export function RegisterPage() {
       await register(role, { username, password, email, fullName });
       navigate("/login", {
         replace: true,
-        state: { registered: true, email },
+        state: { registered: true, username },
       });
     } catch (err) {
       if (err instanceof ApiError) {

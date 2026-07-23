@@ -2,30 +2,45 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
-import type { UserRole } from "@/types/event";
+import { ApiError } from "@/lib/apiClient";
 
-const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: "buyer", label: "Người mua vé" },
-  { value: "organizer", label: "Nhà tổ chức" },
-];
+const ERROR_MESSAGES: Record<string, string> = {
+  INVALID_CREDENTIALS: "Tên đăng nhập hoặc mật khẩu không đúng.",
+  VALIDATION_ERROR: "Vui lòng kiểm tra lại thông tin đăng nhập.",
+  KEYCLOAK_UNAVAILABLE: "Hệ thống xác thực đang tạm thời gián đoạn. Vui lòng thử lại sau.",
+  NETWORK_ERROR: "Không thể kết nối tới máy chủ. Vui lòng thử lại.",
+};
 
 export function LoginPage() {
   const location = useLocation();
-  const state = location.state as { from?: string; registered?: boolean; email?: string } | null;
-  const [email, setEmail] = useState(state?.email || "");
+  const state = location.state as { from?: string; registered?: boolean; username?: string } | null;
+  const [username, setUsername] = useState(state?.username || "");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("buyer");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const from = state?.from || null;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    login(email, role);
-    navigate(from || (role === "organizer" ? "/organizer" : "/"), {
-      replace: true,
-    });
+    setError(null);
+    setSubmitting(true);
+    try {
+      const user = await login(username, password);
+      navigate(from || (user.role === "organizer" ? "/organizer" : "/"), {
+        replace: true,
+      });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(ERROR_MESSAGES[err.errorCode] || err.message);
+      } else {
+        setError("Đã có lỗi xảy ra. Vui lòng thử lại.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -40,18 +55,13 @@ export function LoginPage() {
             Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.
           </p>
         )}
-        <p className="mb-6 text-sm text-muted">
-          Bản demo giao diện — chưa kết nối luồng đăng nhập tới User Service,
-          đăng nhập chỉ mô phỏng phiên làm việc cục bộ. Nếu email đã từng đăng
-          ký, vai trò lưu từ trước sẽ được dùng lại thay vì lựa chọn dưới đây.
-        </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
-            type="email"
+            type="text"
             required
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Tên đăng nhập"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             className="w-full rounded-lg border border-border-soft px-3.5 py-2.5 text-sm outline-none focus:border-green"
           />
           <input
@@ -62,24 +72,13 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-lg border border-border-soft px-3.5 py-2.5 text-sm outline-none focus:border-green"
           />
-          <div className="grid grid-cols-2 gap-2.5">
-            {ROLE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setRole(opt.value)}
-                className={`cursor-pointer rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${
-                  role === opt.value
-                    ? "border-green bg-green-tint"
-                    : "border-border-soft bg-white"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <Button type="submit" variant="green" className="mt-2 w-full">
-            Đăng nhập
+          {error && (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
+            </p>
+          )}
+          <Button type="submit" variant="green" className="mt-2 w-full" disabled={submitting}>
+            {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </form>
         <p className="mt-5 text-center text-sm text-muted">

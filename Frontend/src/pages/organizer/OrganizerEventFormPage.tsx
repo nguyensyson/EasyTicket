@@ -58,7 +58,9 @@ function toForm(event: EventDto): InfoForm {
   return {
     title: event.title,
     description: event.description ?? "",
-    category: event.category,
+    // TODO: form category dùng EventCategoryCode cũ trong khi EventDto.category thật là tên danh
+    // mục (name) — bug categoryId tồn tại từ trước ở luồng tạo/sửa event, không thuộc phạm vi sửa lần này.
+    category: event.category as EventCategoryCode,
     locationId: event.locationId,
     location: event.location,
     bannerUrl: event.bannerUrl ?? "",

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { EventItem } from "@/types/event";
-import { getEventImageStyle, getCategoryLabel } from "@/utils/eventImage";
+import { getEventCategoryDisplayLabel, getEventImageStyle } from "@/utils/eventImage";
 
 const AUTOPLAY_MS = 5000;
 
@@ -35,7 +35,15 @@ export function HeroCarousel({ events }: { events: EventItem[] }) {
             pointerEvents: i === index ? "auto" : "none",
           }}
         >
-          <div className="absolute inset-0" style={getEventImageStyle(slide.category)} />
+          {slide.bannerUrl ? (
+            <img
+              src={slide.bannerUrl}
+              alt={slide.title}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0" style={getEventImageStyle(slide.category)} />
+          )}
           <div
             className="absolute inset-0"
             style={{
@@ -45,7 +53,7 @@ export function HeroCarousel({ events }: { events: EventItem[] }) {
           />
           <div className="relative z-[1] max-w-[480px] px-4 sm:px-10 lg:px-16">
             <div className="mb-4 inline-block rounded-pill bg-gold px-3.5 py-1.5 text-xs font-bold text-dark">
-              {getCategoryLabel(slide.category)}
+              {getEventCategoryDisplayLabel(slide)}
             </div>
             <h1 className="mb-2.5 text-2xl font-extrabold leading-tight text-cream sm:text-[34px]">
               {slide.title}

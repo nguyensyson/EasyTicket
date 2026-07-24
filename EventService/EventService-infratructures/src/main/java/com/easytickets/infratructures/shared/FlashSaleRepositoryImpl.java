@@ -7,6 +7,8 @@ import com.easytickets.infratructures.repo.FlashSaleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -29,5 +31,12 @@ public class FlashSaleRepositoryImpl implements FlashSaleRepo {
     @Override
     public boolean existsByEventId(String eventId) {
         return jpaRepository.existsByEventId(eventId);
+    }
+
+    @Override
+    public List<FlashSaleDto> findActive(LocalDateTime now) {
+        return jpaRepository.findByStartAtLessThanEqualAndEndAtGreaterThanEqualOrderByStartAtDesc(now, now).stream()
+                .map(mapper::toDto)
+                .toList();
     }
 }

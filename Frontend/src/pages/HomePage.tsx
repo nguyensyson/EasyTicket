@@ -2,14 +2,19 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAllEvents } from "@/hooks/useAllEvents";
 import { HeroCarousel } from "@/components/events/HeroCarousel";
-import { CategoryTabs } from "@/components/events/CategoryTabs";
+import { CategoryTabs, FEATURED_TAB_KEY } from "@/components/events/CategoryTabs";
 import { EventCard } from "@/components/events/EventCard";
 
 export function HomePage() {
-  const [activeCategory, setActiveCategory] = useState("noibat");
+  const [activeCategory, setActiveCategory] = useState(FEATURED_TAB_KEY);
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
-  const allEvents = useAllEvents();
+  const { events: allEvents, categories } = useAllEvents();
+
+  const categoryTabs = useMemo(
+    () => categories.map((c) => ({ key: c.id, label: c.name })),
+    [categories],
+  );
 
   const featuredEvents = useMemo(
     () => allEvents.filter((e) => e.featured),
@@ -31,9 +36,11 @@ export function HomePage() {
       );
     }
 
-    return activeCategory === "noibat"
-      ? allEvents.filter((e) => e.featured)
-      : allEvents.filter((e) => e.category === activeCategory);
+    if (activeCategory === FEATURED_TAB_KEY) {
+      return allEvents.filter((e) => e.featured);
+    }
+
+    return allEvents.filter((e) => e.categoryId === activeCategory);
   }, [allEvents, activeCategory, searchQuery]);
 
   return (
@@ -41,7 +48,11 @@ export function HomePage() {
       <HeroCarousel events={featuredEvents} />
 
       <section className="px-4 pb-2 pt-9 sm:px-10">
-        <CategoryTabs active={activeCategory} onChange={setActiveCategory} />
+        <CategoryTabs
+          categories={categoryTabs}
+          active={activeCategory}
+          onChange={setActiveCategory}
+        />
       </section>
 
       <section className="px-4 py-5 pb-15 sm:px-10">

@@ -3,6 +3,7 @@ export function formatPrice(amount: number): string {
 }
 
 export function formatMinPrice(prices: number[]): string {
+  if (prices.length === 0) return "Đang cập nhật";
   return formatPrice(Math.min(...prices));
 }
 

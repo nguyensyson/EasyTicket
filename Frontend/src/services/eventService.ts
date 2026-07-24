@@ -1,8 +1,8 @@
 import { apiRequest } from "@/lib/apiClient";
 import type {
+  CategoryDto,
   CreateEventPayload,
   CreateFlashSalePayload,
-  EventCategoryCode,
   EventDto,
   EventSearchParams,
   FlashSaleDto,
@@ -20,8 +20,8 @@ export function listLocations(): Promise<LocationDto[]> {
   return apiRequest<LocationDto[]>("/api/v1/locations");
 }
 
-export function listCategories(): Promise<EventCategoryCode[]> {
-  return apiRequest<EventCategoryCode[]>("/api/v1/events/categories");
+export function listCategories(): Promise<CategoryDto[]> {
+  return apiRequest<CategoryDto[]>("/api/v1/categories");
 }
 
 // --- Public (buyer-facing) event browsing ---
@@ -30,7 +30,7 @@ export function searchPublishedEvents(
   params: EventSearchParams = {},
 ): Promise<PageResponse<EventDto>> {
   const qs = new URLSearchParams();
-  if (params.category) qs.set("category", params.category);
+  if (params.categoryId) qs.set("categoryId", params.categoryId);
   if (params.locationId) qs.set("locationId", params.locationId);
   if (params.from) qs.set("from", params.from);
   if (params.to) qs.set("to", params.to);

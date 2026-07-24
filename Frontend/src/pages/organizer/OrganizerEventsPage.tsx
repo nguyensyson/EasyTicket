@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Pencil, BarChart3, Trash2, Send, Ban } from "lucide-react";
 import { useOrganizerEvents } from "@/hooks/useOrganizerEvents";
-import { getEventCategoryLabel } from "@/utils/eventCategory";
 import { formatDateLabel } from "@/utils/format";
 import { StatusBadge } from "@/components/organizer/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +9,7 @@ import { PillButton } from "@/components/ui/PillButton";
 import { ApiError } from "@/lib/apiClient";
 import { deleteEvent, updateEvent } from "@/services/eventService";
 import type { EventStatus } from "@/types/event";
-import type { EventDto } from "@/types/eventApi";
+import type { EventCategoryCode, EventDto } from "@/types/eventApi";
 
 const FILTERS: { key: EventStatus | "ALL"; label: string }[] = [
   { key: "ALL", label: "Tất cả" },
@@ -37,7 +36,9 @@ export function OrganizerEventsPage() {
       await updateEvent(event.id, {
         title: event.title,
         description: event.description ?? "",
-        category: event.category,
+        // TODO: UpdateEventPayload.category cần đổi thành categoryId (UUID) để khớp
+        // UpdateEventRequest thật ở backend — bug tồn tại từ trước, không thuộc phạm vi sửa lần này.
+        category: event.category as EventCategoryCode,
         locationId: event.locationId,
         location: event.location,
         bannerUrl: event.bannerUrl ?? undefined,
@@ -137,7 +138,7 @@ export function OrganizerEventsPage() {
                   <div className="mb-1.5 flex flex-wrap items-center gap-2">
                     <StatusBadge status={event.status} />
                     <span className="rounded-pill bg-[#EDE6D9] px-2.5 py-1 text-xs font-semibold text-[#5a5a52]">
-                      {getEventCategoryLabel(event.category)}
+                      {event.category}
                     </span>
                   </div>
                   <div className="text-base font-bold">{event.title}</div>

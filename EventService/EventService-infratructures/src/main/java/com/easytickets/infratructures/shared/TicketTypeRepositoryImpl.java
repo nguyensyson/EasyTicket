@@ -7,6 +7,7 @@ import com.easytickets.infratructures.repo.TicketTypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +30,9 @@ public class TicketTypeRepositoryImpl implements TicketTypeRepo {
 
     @Override
     public List<TicketTypeDto> findByEventId(String eventId) {
-        return jpaRepository.findByEventId(eventId).stream().map(mapper::toDto).toList();
+        // Cached qua @Cacheable(cacheNames = "ticket-types") - dùng ArrayList thay vì Stream.toList()
+        // (immutable) vì GenericJacksonJsonRedisSerializer không ghi type-id cho List bất biến của
+        // JDK khi serialize, khiến deserialize ở lần đọc cache tiếp theo ném MismatchedInputException.
+        return new ArrayList<>(jpaRepository.findByEventId(eventId).stream().map(mapper::toDto).toList());
     }
 }

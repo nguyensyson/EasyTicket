@@ -19,6 +19,12 @@ export interface EventItem {
   tickets: TicketType[];
   /** Có mặt khi sự kiện đến từ Organizer (không phải seed data tĩnh) — dùng để phân biệt nguồn khi hiển thị. */
   organizerId?: string;
+  /** categoryId thật (bảng categories) — chỉ có ở sự kiện lấy từ Event Service, dùng để lọc theo tab danh mục thật. */
+  categoryId?: string;
+  /** Tên danh mục thật (CategoryDto.name, vd. "Triển lãm & Hội chợ") — ưu tiên hiển thị thay cho label nhóm cũ. */
+  categoryLabel?: string;
+  /** Ảnh banner thật của sự kiện (EventDto.bannerUrl) — sự kiện demo tĩnh không có, dùng placeholder. */
+  bannerUrl?: string;
 }
 
 // --- Nghiệp vụ Organizer — bám theo schema events/ticket_types/flash_sales ở README (Event Service) ---

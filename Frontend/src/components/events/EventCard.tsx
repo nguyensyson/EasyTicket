@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { EventItem } from "@/types/event";
-import { getEventImageStyle, getCategoryLabel } from "@/utils/eventImage";
+import { getEventCategoryDisplayLabel, getEventImageStyle } from "@/utils/eventImage";
 import { formatMinPrice } from "@/utils/format";
 
 export function EventCard({ event }: { event: EventItem }) {
@@ -11,13 +11,21 @@ export function EventCard({ event }: { event: EventItem }) {
     >
       <div
         className="relative h-40"
-        style={getEventImageStyle(event.category)}
+        style={event.bannerUrl ? undefined : getEventImageStyle(event.category)}
       >
-        <span className="absolute bottom-2.5 left-2.5 rounded-md bg-[rgba(22,22,22,0.65)] px-2 py-1 font-mono text-[11px] text-cream">
-          event image
-        </span>
+        {event.bannerUrl ? (
+          <img
+            src={event.bannerUrl}
+            alt={event.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="absolute bottom-2.5 left-2.5 rounded-md bg-[rgba(22,22,22,0.65)] px-2 py-1 font-mono text-[11px] text-cream">
+            event image
+          </span>
+        )}
         <span className="absolute right-2.5 top-2.5 rounded-pill bg-gold px-2.5 py-1 text-[11px] font-bold text-dark">
-          {getCategoryLabel(event.category)}
+          {getEventCategoryDisplayLabel(event)}
         </span>
       </div>
       <div className="p-4">

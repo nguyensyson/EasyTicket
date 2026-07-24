@@ -15,12 +15,18 @@ export interface LocationDto {
   name: string;
 }
 
+export interface CategoryDto {
+  id: string;
+  name: string;
+}
+
 export interface EventDto {
   id: string;
   organizerId: string;
   title: string;
   description: string | null;
-  category: EventCategoryCode;
+  categoryId: string;
+  category: string; // tên danh mục (join sẵn từ Event Service), không phải EventCategoryCode
   locationId: string;
   location: string;
   bannerUrl: string | null;
@@ -82,7 +88,7 @@ export interface CreateFlashSalePayload {
 }
 
 export interface EventSearchParams {
-  category?: EventCategoryCode;
+  categoryId?: string;
   locationId?: string;
   from?: string;
   to?: string;

@@ -61,7 +61,7 @@
         </processorPath>
         <module name="UserService-common" />
       </profile>
-      <profile name="Annotation profile for PaymentService" enabled="true">
+      <profile name="Annotation profile for EventService" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />

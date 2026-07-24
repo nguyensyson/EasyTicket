@@ -7,6 +7,7 @@ import com.easytickets.infratructures.repo.LocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,7 +20,10 @@ public class LocationRepositoryImpl implements LocationRepo {
 
     @Override
     public List<LocationDto> findAll() {
-        return jpaRepository.findAll().stream().map(mapper::toDto).toList();
+        // Cached qua @Cacheable(cacheNames = "locations") - dùng ArrayList thay vì Stream.toList()
+        // (immutable) vì GenericJacksonJsonRedisSerializer không ghi type-id cho List bất biến của
+        // JDK khi serialize, khiến deserialize ở lần đọc cache tiếp theo ném MismatchedInputException.
+        return new ArrayList<>(jpaRepository.findAll().stream().map(mapper::toDto).toList());
     }
 
     @Override

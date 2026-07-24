@@ -3,7 +3,6 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { Pencil, TrendingUp, Wallet, Zap } from "lucide-react";
 import { getFlashSaleStatus } from "@/utils/organizerStats";
 import { formatDateTimeLabel, formatPrice } from "@/utils/format";
-import { getEventCategoryLabel } from "@/utils/eventCategory";
 import { StatCard } from "@/components/organizer/StatCard";
 import { StatusBadge } from "@/components/organizer/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -85,7 +84,7 @@ export function OrganizerEventDashboardPage() {
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
             <StatusBadge status={event.status} />
             <span className="rounded-pill bg-[#EDE6D9] px-2.5 py-1 text-xs font-semibold text-[#5a5a52]">
-              {getEventCategoryLabel(event.category)}
+              {event.category}
             </span>
           </div>
           <h1 className="text-2xl font-extrabold">{event.title}</h1>

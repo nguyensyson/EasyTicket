@@ -7,6 +7,7 @@ import com.easytickets.business.dto.EventDto;
 import com.easytickets.business.dto.EventOrderStatsDto;
 import com.easytickets.business.dto.EventSearchCriteria;
 import com.easytickets.business.dto.EventStatus;
+import com.easytickets.business.dto.FlashSaleDto;
 import com.easytickets.business.dto.OrganizerEventStatsDto;
 import com.easytickets.business.dto.OrganizerHistoryDto;
 import com.easytickets.business.dto.UpdateEventRequest;
@@ -18,6 +19,7 @@ import com.easytickets.business.exception.OrderServiceUnavailableException;
 import com.easytickets.business.exception.ValidationException;
 import com.easytickets.business.repo.CategoryRepo;
 import com.easytickets.business.repo.EventRepo;
+import com.easytickets.business.repo.FlashSaleRepo;
 import com.easytickets.business.repo.LocationRepo;
 import com.easytickets.business.services.EventService;
 import com.easytickets.common.dto.PageResponse;
@@ -29,8 +31,12 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,9 +44,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class EventServiceImpl implements EventService {
 
+    private static final String FEATURED_CATEGORY_LABEL = "Nổi bật";
+    private static final int FEATURED_LIMIT = 6;
+
     private final EventRepo eventRepo;
     private final LocationRepo locationRepo;
     private final CategoryRepo categoryRepo;
+    private final FlashSaleRepo flashSaleRepo;
     private final OrderServiceClient orderServiceClient;
 
     @Override
@@ -129,7 +139,59 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public PageResponse<EventDto> searchPublishedEvents(EventSearchCriteria criteria) {
-        return eventRepo.search(criteria);
+        PageResponse<EventDto> result = eventRepo.search(criteria);
+
+        boolean isFirstUnfilteredPage = criteria.getPage() == 0
+                && criteria.getCategoryId() == null
+                && criteria.getLocationId() == null
+                && criteria.getFrom() == null
+                && criteria.getTo() == null;
+        if (!isFirstUnfilteredPage) {
+            return result;
+        }
+
+        List<EventDto> featured = buildFeaturedEvents(result.getContent());
+        if (featured.isEmpty()) {
+            return result;
+        }
+
+        List<EventDto> content = new ArrayList<>(featured.size() + result.getContent().size());
+        content.addAll(featured);
+        content.addAll(result.getContent());
+
+        return result.toBuilder().content(content).build();
+    }
+
+    /**
+     * Featured = sự kiện đang trong khung giờ flash sale (proxy cho "lượt mua gần đây"
+     * vì Event Service không lưu dữ liệu đơn hàng thật), lấp đầy chỗ trống còn lại bằng
+     * các sự kiện sắp diễn ra sớm nhất của trang hiện tại. Category "Nổi bật" chỉ là
+     * nhãn sinh ra ở tầng logic, không tồn tại trong bảng categories.
+     */
+    private List<EventDto> buildFeaturedEvents(List<EventDto> currentPageEvents) {
+        List<String> activeFlashSaleEventIds = flashSaleRepo.findActive(LocalDateTime.now()).stream()
+                .map(FlashSaleDto::getEventId)
+                .distinct()
+                .limit(FEATURED_LIMIT)
+                .toList();
+
+        List<EventDto> featuredSource = activeFlashSaleEventIds.stream()
+                .map(eventRepo::findById)
+                .flatMap(Optional::stream)
+                .filter(event -> event.getStatus() == EventStatus.PUBLISHED)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        if (featuredSource.size() < FEATURED_LIMIT) {
+            Set<String> alreadyFeatured = featuredSource.stream().map(EventDto::getId).collect(Collectors.toSet());
+            currentPageEvents.stream()
+                    .filter(event -> !alreadyFeatured.contains(event.getId()))
+                    .limit(FEATURED_LIMIT - featuredSource.size())
+                    .forEach(featuredSource::add);
+        }
+
+        return featuredSource.stream()
+                .map(event -> event.toBuilder().category(FEATURED_CATEGORY_LABEL).build())
+                .toList();
     }
 
     @Override
@@ -191,7 +253,7 @@ public class EventServiceImpl implements EventService {
         return event;
     }
 
-    private void validateSchedule(java.time.LocalDateTime startTime, java.time.LocalDateTime endTime) {
+    private void validateSchedule(LocalDateTime startTime, LocalDateTime endTime) {
         if (!startTime.isBefore(endTime)) {
             throw new ValidationException("startTime must be before endTime");
         }

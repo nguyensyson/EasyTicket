@@ -46,4 +46,18 @@
                  relativeToChangelogFile="false"/>
     </changeSet>
 
+    <changeSet author="dev.team" id="V7_202607231100_seed_categories_from_crawl"
+               onValidationFail="MARK_RAN">
+        <sqlFile dbms="mysql"
+                 path="classpath:/db/sources/V7_202607231100_seed_categories_from_crawl.sql"
+                 relativeToChangelogFile="false"/>
+    </changeSet>
+
+    <changeSet author="dev.team" id="V8_202607231101_seed_sample_events_from_crawl"
+               onValidationFail="MARK_RAN">
+        <sqlFile dbms="mysql"
+                 path="classpath:/db/sources/V8_202607231101_seed_sample_events_from_crawl.sql"
+                 relativeToChangelogFile="false"/>
+    </changeSet>
+
 </databaseChangeLog>
